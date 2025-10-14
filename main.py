@@ -1,23 +1,19 @@
 """
 main.py
 =========
-Application runner for RegressorMatrice.
+Interactive runner for RegressorMatrice.
 
-This file orchestrates:
-1. Dataset ingestion
-2. Data preprocessing
-3. Matrix operations
-4. Regression model training
-5. Visualization of results
+This version lets the USER provide their own dataset path
+instead of hardcoding it.
 """
 
 import sys
 from pathlib import Path
 
-# Add app to path for relative imports
+# Add app modules to path
 sys.path.append(str(Path(__file__).resolve().parent / "app"))
 
-# --- Import pipeline components ---
+# Import core modules
 from dataset_receiver.dataset_gate import DatasetGate
 from preprocessor.cleaner import DataCleaner
 from regressor.linear_regression import LinearRegressor
@@ -26,52 +22,77 @@ from visualizations.correlation_heatmap import CorrelationHeatmap
 
 
 def main():
-    print("🔹 Starting RegressorMatrice Pipeline...")
+    print("\n🔹 Welcome to RegressorMatrice!")
+    print("This app will perform data cleaning, regression, and visualization.\n")
 
     # -----------------------------
-    # 1️⃣ Dataset Loading
+    # 1️⃣ Ask user for dataset path
+    # -----------------------------
+    dataset_path = input("📂 Please enter the path to your dataset file: ").strip()
+
+    if not Path(dataset_path).exists():
+        print(f"❌ Error: File not found at '{dataset_path}'")
+        return
+
+    # -----------------------------
+    # 2️⃣ Load dataset
     # -----------------------------
     gate = DatasetGate()
-    df = gate.load_dataset("data/sample_dataset.csv")  # replace with your dataset path
-
-    print(f"✅ Dataset Loaded: {df.shape[0]} rows, {df.shape[1]} columns")
+    df = gate.load_dataset(dataset_path)
+    print(f"✅ Dataset Loaded: {df.shape[0]} rows × {df.shape[1]} columns")
 
     # -----------------------------
-    # 2️⃣ Preprocessing
+    # 3️⃣ Preprocessing
     # -----------------------------
     cleaner = DataCleaner(df)
     df_clean = cleaner.clean()
-
-    print("✅ Data cleaned and ready for processing.")
+    print("✅ Data cleaned successfully.")
 
     # -----------------------------
-    # 3️⃣ Regression Model Training
+    # 4️⃣ Target column input
+    # -----------------------------
+    print("\nAvailable columns:")
+    print(", ".join(df_clean.columns))
+    target_col = input("\n🎯 Enter the target column for regression: ").strip()
+
+    if target_col not in df_clean.columns:
+        print(f"❌ Error: '{target_col}' not found in dataset columns.")
+        return
+
+    # -----------------------------
+    # 5️⃣ Regression
     # -----------------------------
     regressor = LinearRegressor(df_clean)
-    regressor.train(target="y")  # specify your target column
-
+    regressor.train(target=target_col)
     print("✅ Model training complete.")
 
     # -----------------------------
-    # 4️⃣ Visualization
+    # 6️⃣ Visualizations
     # -----------------------------
-    scatter = ScatterPlot(df_clean, x_col="x1", y_col="y")
-    scatter.show()
+    try:
+        # Choose example feature for plotting
+        features = [c for c in df_clean.columns if c != target_col]
+        if features:
+            x_feature = features[0]
+            scatter = ScatterPlot(df_clean, x_col=x_feature, y_col=target_col)
+            scatter.show()
 
-    heatmap = CorrelationHeatmap(df_clean)
-    heatmap.show()
+        heatmap = CorrelationHeatmap(df_clean)
+        heatmap.show()
 
-    print("✅ Visualization complete.")
+        print("✅ Visualization complete.")
+    except Exception as e:
+        print(f"⚠️ Visualization skipped due to: {e}")
 
     # -----------------------------
-    # 5️⃣ Evaluation / Summary
+    # 7️⃣ Evaluation Summary
     # -----------------------------
     results = regressor.evaluate()
     print("\n📊 Regression Summary:")
     for k, v in results.items():
         print(f"  {k}: {v:.4f}")
 
-    print("\n🎉 RegressorMatrice Run Completed Successfully!")
+    print("\n🎉 RegressorMatrice completed successfully!")
 
 
 if __name__ == "__main__":
