@@ -1,57 +1,79 @@
-from flask import Flask, request, jsonify, send_from_directory
+# main.py
+from flask import Flask, request, jsonify
 import os
+import pandas as pd
 from app.dataset_receiver.dataset_gate import DatasetGate
-from app.regressor.linear_regression import LinearRegression 
-from app.visualizations.base_plotter import BasePlotter 
+from app.regressor.linear_regression import LinearRegressor  # Your regressor module
 
-app = Flask(__name__, static_folder="frontend/static", template_folder="frontend/templates")
+app = Flask(__name__)
+UPLOAD_FOLDER = "uploads"
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
-# Route to serve the main page
-@app.route("/")
-def index():
-    return send_from_directory(app.template_folder, "index.html")
+# Store uploaded datasets in memory (optional)
+datasets = {}
 
-# Upload dataset
-@app.route("/upload", methods=["POST"])
-def upload_dataset():
+@app.route("/api/upload", methods=["POST"])
+def upload_file():
     if "file" not in request.files:
-        return jsonify({"error": "No file uploaded"}), 400
+        return jsonify({"error": "No file part"}), 400
 
     file = request.files["file"]
-    file_path = os.path.join("/tmp", file.filename)
-    file.save(file_path)
+    if file.filename == "":
+        return jsonify({"error": "No selected file"}), 400
 
+    # Save file temporarily
+    filepath = os.path.join(UPLOAD_FOLDER, file.filename)
+    file.save(filepath)
+
+    # Use DatasetGate to validate & filter numeric columns
     try:
-        gate = DatasetGate(file_path)
+        gate = DatasetGate(filepath)
         df = gate.receive()
-        columns = df.columns.tolist()
-        return jsonify({"columns": columns})
     except Exception as e:
         return jsonify({"error": str(e)}), 400
 
-# Run regression
-@app.route("/run-analysis", methods=["POST"])
+    # Store dataframe in memory
+    datasets[file.filename] = df
+
+    return jsonify({"message": "File uploaded", "columns": df.columns.tolist()})
+
+@app.route("/api/run_analysis", methods=["POST"])
 def run_analysis():
     data = request.json
-    features = data.get("features")
-    target = data.get("target")
-    file_path = data.get("file_path")
+    filename = data.get("filename")
+    features = data.get("features")  # list of feature column names
+    target = data.get("target")      # target column name
 
+    if not filename or filename not in datasets:
+        return jsonify({"error": "Dataset not found"}), 400
+    if not features or not target:
+        return jsonify({"error": "Features or target not provided"}), 400
+
+    df = datasets[filename]
+    X = df[features]
+    y = df[target]
+
+    # Run linear regression
     try:
-        gate = DatasetGate(file_path)
-        df = gate.receive()
-
-        model = LinearRegressionModel()
-        model.fit(df[features], df[target])
-        results = model.summary()
-
-        # Optional: generate plots
-        plots = Plotter(df, model).generate_all()
-
-        return jsonify({"results": results, "plots": plots})
+        model = LinearRegressor()
+        model.fit(X, y)
+        predictions = model.predict(X)
+        coef_dict = dict(zip(features, model.coef_))
+        equation = f"{target} = " + " + ".join([f"{coef:.4f}*{col}" for col, coef in coef_dict.items()])
+        results = {
+            "equation": equation,
+            "coefficients": coef_dict,
+            "actual": y.tolist(),
+            "predicted": predictions.tolist()
+        }
     except Exception as e:
-        return jsonify({"error": str(e)}), 400
+        return jsonify({"error": str(e)}), 500
 
+    return jsonify(results)
+
+@app.route("/health", methods=["GET"])
+def health():
+    return "OK", 200
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8000)
