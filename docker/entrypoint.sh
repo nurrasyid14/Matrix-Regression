@@ -11,3 +11,5 @@ if [ "$#" -gt 0 ]; then
 else
   exec bash
 fi
+
+ENTRYPOINT ["bash", "docker/entrypoint.sh"]
