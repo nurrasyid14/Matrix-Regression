@@ -1,99 +1,87 @@
-"""
-main.py
-=========
-Interactive runner for RegressorMatrice.
-
-This version lets the USER provide their own dataset path
-instead of hardcoding it.
-"""
-
-import sys
-from pathlib import Path
-
-# Add app modules to path
-sys.path.append(str(Path(__file__).resolve().parent / "app"))
-
-# Import core modules
+from flask import Flask, render_template, request, jsonify
+import os
+import pandas as pd
 from app.dataset_receiver.dataset_gate import DatasetGate
-from app.preprocessor.cleaner import DataCleaner
-from app.regressor.linear_regression import LinearRegressor
-from app.visualizations.scatter_plot import ScatterPlot
-from app.visualizations.correlation_heatmap import CorrelationHeatmap
+from app.regressor.linear_regression import LinearRegression
+
+app = Flask(__name__, template_folder="frontend/templates", static_folder="frontend/static")
+app.config['UPLOAD_FOLDER'] = 'uploads'
+
+# Ensure upload folder exists
+os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+
+# Store uploaded dataset temporarily in memory
+datasets = {}
+
+@app.route("/", methods=["GET"])
+def index():
+    return render_template("index.html")
 
 
-def main():
-    print("\n🔹 Welcome to RegressorMatrice!")
-    print("This app will perform data cleaning, regression, and visualization.\n")
+@app.route("/upload", methods=["POST"])
+def upload():
+    """
+    Upload dataset, validate numeric columns, and return list of columns.
+    """
+    if "dataset" not in request.files:
+        return jsonify({"error": "No file uploaded"}), 400
 
-    # -----------------------------
-    # 1️⃣ Ask user for dataset path
-    # -----------------------------
-    dataset_path = input("📂 Please enter the path to your dataset file: ").strip()
+    file = request.files["dataset"]
+    if file.filename == "":
+        return jsonify({"error": "No file selected"}), 400
 
-    if not Path(dataset_path).exists():
-        print(f"❌ Error: File not found at '{dataset_path}'")
-        return
+    file_path = os.path.join(app.config['UPLOAD_FOLDER'], file.filename)
+    file.save(file_path)
 
-    # -----------------------------
-    # 2️⃣ Load dataset
-    # -----------------------------
-    gate = DatasetGate()
-    df = gate.load_dataset(dataset_path)
-    print(f"✅ Dataset Loaded: {df.shape[0]} rows × {df.shape[1]} columns")
-
-    # -----------------------------
-    # 3️⃣ Preprocessing
-    # -----------------------------
-    cleaner = DataCleaner(df)
-    df_clean = cleaner.clean()
-    print("✅ Data cleaned successfully.")
-
-    # -----------------------------
-    # 4️⃣ Target column input
-    # -----------------------------
-    print("\nAvailable columns:")
-    print(", ".join(df_clean.columns))
-    target_col = input("\n🎯 Enter the target column for regression: ").strip()
-
-    if target_col not in df_clean.columns:
-        print(f"❌ Error: '{target_col}' not found in dataset columns.")
-        return
-
-    # -----------------------------
-    # 5️⃣ Regression
-    # -----------------------------
-    regressor = LinearRegressor(df_clean)
-    regressor.train(target=target_col)
-    print("✅ Model training complete.")
-
-    # -----------------------------
-    # 6️⃣ Visualizations
-    # -----------------------------
+    # Load and validate dataset
     try:
-        # Choose example feature for plotting
-        features = [c for c in df_clean.columns if c != target_col]
-        if features:
-            x_feature = features[0]
-            scatter = ScatterPlot(df_clean, x_col=x_feature, y_col=target_col)
-            scatter.show()
-
-        heatmap = CorrelationHeatmap(df_clean)
-        heatmap.show()
-
-        print("✅ Visualization complete.")
+        gate = DatasetGate(file_path)
+        df = gate.receive()
     except Exception as e:
-        print(f"⚠️ Visualization skipped due to: {e}")
+        return jsonify({"error": str(e)}), 400
 
-    # -----------------------------
-    # 7️⃣ Evaluation Summary
-    # -----------------------------
-    results = regressor.evaluate()
-    print("\n📊 Regression Summary:")
-    for k, v in results.items():
-        print(f"  {k}: {v:.4f}")
+    # Save dataset in memory with a temporary key
+    datasets["current"] = df
 
-    print("\n🎉 RegressorMatrice completed successfully!")
+    # Return numeric columns to JS
+    return jsonify({"columns": df.columns.tolist()})
+
+
+@app.route("/analyze", methods=["POST"])
+def analyze():
+    """
+    Run regression with selected X/Y columns and return results.
+    """
+    data = request.json
+    x_cols = data.get("x_columns", [])
+    y_col = data.get("y_column")
+
+    df = datasets.get("current")
+    if df is None:
+        return jsonify({"error": "No dataset uploaded"}), 400
+
+    if not x_cols or not y_col:
+        return jsonify({"error": "Select X and Y columns"}), 400
+
+    # Run Linear Regression
+    X = df[x_cols]
+    y = df[y_col]
+    model = LinearRegressor(df)
+    model.fit(X, y)
+    coefficients = dict(zip(x_cols, model.coef_))
+    intercept = model.intercept_
+    predictions = model.predict(X).tolist()
+
+    # Prepare JSON for frontend (equation, coefficients, predictions)
+    regression_eq = f"{y_col} = {intercept:.4f} + " + " + ".join([f"{coef:.4f}*{col}" for col, coef in coefficients.items()])
+    result = {
+        "equation": regression_eq,
+        "coefficients": coefficients,
+        "predictions": predictions
+    }
+
+    return jsonify(result)
 
 
 if __name__ == "__main__":
-    main()
+    app.run(host="0.0.0.0", port=5000, debug=True)

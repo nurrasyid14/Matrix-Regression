@@ -1,5 +1,3 @@
-#dataset_gate.py
-
 import os
 import pandas as pd
 from datetime import datetime
@@ -37,31 +35,26 @@ class DatasetGate:
         self.data = None
 
     def _detect_loader(self):
-        """Detect correct loader based on file extension."""
+        """Detect correct loader class based on file extension."""
         _, ext = os.path.splitext(self.path)
         ext = ext.lower()
         if ext not in self.SUPPORTED_EXTENSIONS:
             raise ValueError(
-                f"Unsupported file type '{ext}'. "
-                f"Supported types: {', '.join(self.SUPPORTED_EXTENSIONS.keys())}"
+                f"Unsupported file type '{ext}'. Supported types: {', '.join(self.SUPPORTED_EXTENSIONS.keys())}"
             )
         return self.SUPPORTED_EXTENSIONS[ext]
 
     def _auto_convert_numeric(self, df: pd.DataFrame) -> pd.DataFrame:
-        """
-        Attempt to convert numeric-looking string columns into numeric dtype.
-        """
+        """Attempt to convert numeric-looking string columns to numeric dtype."""
         for col in df.columns:
-            # Try conversion only for object or string columns
             if df[col].dtype == "object":
                 converted = pd.to_numeric(df[col], errors="ignore")
-                # If conversion changes dtype, keep it
                 if not converted.equals(df[col]):
                     df[col] = converted
         return df
 
     def _filter_numeric(self, df: pd.DataFrame) -> pd.DataFrame:
-        """Filter to numeric columns only, log discarded ones."""
+        """Filter to numeric columns only and log discarded ones."""
         all_columns = set(df.columns)
         numeric_df = df.select_dtypes(include=["number"])
         numeric_columns = set(numeric_df.columns)
@@ -72,21 +65,26 @@ class DatasetGate:
 
         if numeric_df.empty:
             raise ValueError(
-                "Dataset contains no numeric columns. "
-                "Non-numeric data is not accepted by this receiver."
+                "Dataset contains no numeric columns. Non-numeric data is not accepted."
             )
 
         return numeric_df
 
     def _log_discarded(self, discarded_cols):
-        """Write discarded columns to a log file."""
+        """Log discarded columns to a file."""
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         with open(self.log_path, "a", encoding="utf-8") as f:
             f.write(f"[{timestamp}] Discarded non-numeric columns: {', '.join(discarded_cols)}\n")
 
     def receive(self) -> pd.DataFrame:
         """
-        Entry point — detect loader, load dataset, validate, convert, and filter.
+        Main entry point:
+          1. Check file existence
+          2. Detect loader
+          3. Load dataset
+          4. Validate DataFrame
+          5. Auto-convert numeric strings
+          6. Filter numeric columns (optional)
         """
         check_file_exists(self.path)
         loader_class = self._detect_loader()
@@ -94,10 +92,10 @@ class DatasetGate:
         df = self.loader.load()
         validate_dataframe(df)
 
-        # Step 1: Try to auto-convert string numbers to real numeric
+        # Convert numeric-like strings
         df = self._auto_convert_numeric(df)
 
-        # Step 2: Keep numeric columns only
+        # Keep numeric columns only
         if self.numeric_only:
             df = self._filter_numeric(df)
 
@@ -105,7 +103,15 @@ class DatasetGate:
         return self.data
 
     def preview(self, n: int = 5) -> pd.DataFrame:
-        """Preview first n rows of the filtered dataset."""
+        """Preview first n rows of the loaded dataset."""
         if self.data is None:
             raise ValueError("No dataset loaded yet. Call `.receive()` first.")
         return self.data.head(n)
+
+    @staticmethod
+    def quick_load(file_path: str, numeric_only: bool = True) -> pd.DataFrame:
+        """
+        Convenience method to load dataset without explicitly creating a DatasetGate instance.
+        """
+        gate = DatasetGate(file_path, numeric_only=numeric_only)
+        return gate.receive()
