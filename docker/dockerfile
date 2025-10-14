@@ -1,22 +1,11 @@
-# Base image
 FROM python:3.11-slim
 
-# Set working directory
 WORKDIR /app
 
-# Copy requirements first for caching
 COPY ../docker/requirements.txt .
 
-# Install dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy the app
 COPY ../app/ .
 
-# Expose Flask port
-EXPOSE 5000
-
-# Entrypoint
-COPY entrypoint.sh .
-RUN chmod +x entrypoint.sh
-ENTRYPOINT ["./entrypoint.sh"]
+CMD ["python", "main.py"]
