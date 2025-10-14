@@ -1,0 +1,21 @@
+# Rencana Kerja Proyek Regressor Matrice
+
+## Backend (Penanggung Jawab: Nama Rekan)
+- [x] Buat struktur folder Flask.
+- [ ] Implementasikan endpoint `/api/upload` untuk menerima file.
+- [ ] Implementasikan logika untuk membaca kolom dari dataset.
+- [ ] Buat class `LinearRegression`.
+- [ ] Implementasikan endpoint `/api/run-regression`.
+- [ ] Siapkan data untuk dikirim ke frontend (persamaan, data chart).
+
+## Frontend (Penanggung Jawab: Nama Anda)
+- [x] Buat struktur HTML dan styling dasar.
+- [x] Implementasikan fungsi upload file di `api.js`.
+- [x] Buat fungsi untuk menampilkan pemilih kolom di `ui.js`.
+- [ ] Hubungkan tombol "Jalankan Analisis" ke endpoint backend.
+- [ ] Implementasikan fungsi untuk menampilkan grafik di `ui.js`.
+- [ ] Lakukan polishing akhir pada tampilan.
+
+## Lain-lain
+- [ ] Buat `Dockerfile` untuk aplikasi.
+- [ ] Tulis dokumentasi akhir di `README.md`.

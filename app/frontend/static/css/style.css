@@ -1,0 +1,38 @@
+/* Custom loading spinner */
+.loader {
+    border: 6px solid #f3f3f3; /* Light grey */
+    border-top: 6px solid #3b82f6; /* Blue */
+    border-radius: 50%;
+    width: 60px;
+    height: 60px;
+    animation: spin 1s linear infinite;
+    margin: auto;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Custom scrollbar for column selectors */
+#feature-selector::-webkit-scrollbar,
+#target-selector::-webkit-scrollbar {
+    width: 8px;
+}
+
+#feature-selector::-webkit-scrollbar-track,
+#target-selector::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+#feature-selector::-webkit-scrollbar-thumb,
+#target-selector::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+}
+
+#feature-selector::-webkit-scrollbar-thumb:hover,
+#target-selector::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
