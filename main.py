@@ -14,11 +14,11 @@ from pathlib import Path
 sys.path.append(str(Path(__file__).resolve().parent / "app"))
 
 # Import core modules
-from dataset_receiver.dataset_gate import DatasetGate
-from preprocessor.cleaner import DataCleaner
-from regressor.linear_regression import LinearRegressor
-from visualizations.scatter_plot import ScatterPlot
-from visualizations.correlation_heatmap import CorrelationHeatmap
+from app.dataset_receiver.dataset_gate import DatasetGate
+from app.preprocessor.cleaner import DataCleaner
+from app.regressor.linear_regression import LinearRegressor
+from app.visualizations.scatter_plot import ScatterPlot
+from app.visualizations.correlation_heatmap import CorrelationHeatmap
 
 
 def main():
