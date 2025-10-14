@@ -39,79 +39,108 @@ A comprehensive web application for matrix operations and regression analysis bu
 
 ```
 Matrix-Regression/
-├── app/
-│   ├── __init__.py
-│   ├── [data_profiler]
-│   │   ├── __init__.py
-│   │   ├── correlation_overview.py
-│   │   ├── missing_values.py
-│   │   ├── profiler.py
-│   │   ├── summary_stats.py
-│   │   └── type_overview.py
-│   ├── [dataset_receiver]
-│   │   ├── __init__.py
-│   │   ├── base_loader.py
-│   │   ├── csv_loader.py
-│   │   ├── dataset_gate.py
-│   │   ├── excel_loader.py
-│   │   ├── json_loader.py
-│   │   ├── utils.py
-│   │   └── validator.py
-│   ├── [matrice_ops]
-│   │   ├── [arithmatics]
-│   │   │   ├── __init__.py
-│   │   │   ├── addition.py
-│   │   │   ├── exponential.py
-│   │   │   ├── fraction.py
-│   │   │   ├── multiplication.py
-│   │   │   └── subtraction.py
-│   │   ├── [linalg]
-│   │   │   ├── __init__.py
-│   │   │   ├── determinant.py
-│   │   │   ├── inverse.py
-│   │   │   ├── rank.py
-│   │   │   └── transpose.py
-│   │   └── __init__.py
-│   ├── [preprocessor]
-│   │   ├── __init__.py
-│   │   ├── base_cleaner.py
-│   │   ├── cleaner.py
-│   │   ├── encoder.py
-│   │   ├── imputer.py
-│   │   ├── outlier_handler.py
-│   │   └── scaler.py
-│   ├── [regressor]
-│   │   ├── __init__.py
-│   │   ├── linear_regression.py
-│   │   ├── metrics.py
-│   │   ├── model_base.py
-│   │   └── preprocessing.py
-│   └── [visualizations]
-│   │    ├── __init__.py
-│   │    ├── base_plotter.py
-│   │    ├── box_plot.py
-│   │    ├── correlation_heatmap.py
-│   │    ├── histogram.py
-│   │    ├── pair_plot.py
-│   │    ├── scatter_plot.py
-│   │    └── utils.py
-│   └── frontend/
-│       ├── __init__.py
-│       ├── app.py
-│       └── templates/
-│           ├── base.html
-│           ├── index.html
-│           ├── dataset.html
-│           ├── basic_ops.html
-│           ├── linalg_ops.html
-│           └── regression.html
-├── docker/
-│   ├── Dockerfile
-│   └── nginx.conf
-├── docker-compose.yml
-├── requirements.txt
-├── main.py
-└── run.py
+├── README.md
+├── app
+│   ├── __init__.py
+│   ├── data_profiler
+│   │   ├── __init__.py
+│   │   ├── correlation_overview.py
+│   │   ├── missing_values.py
+│   │   ├── profiler.py
+│   │   ├── summary_stats.py
+│   │   └── type_overview.py
+│   ├── dataset_receiver
+│   │   ├── __init__.py
+│   │   ├── __pycache__
+│   │   │   ├── __init__.cpython-311.pyc
+│   │   │   ├── base_loader.cpython-311.pyc
+│   │   │   ├── csv_loader.cpython-311.pyc
+│   │   │   ├── dataset_gate.cpython-311.pyc
+│   │   │   ├── excel_loader.cpython-311.pyc
+│   │   │   ├── json_loader.cpython-311.pyc
+│   │   │   ├── utils.cpython-311.pyc
+│   │   │   └── validator.cpython-311.pyc
+│   │   ├── base_loader.py
+│   │   ├── csv_loader.py
+│   │   ├── dataset_gate.py
+│   │   ├── excel_loader.py
+│   │   ├── json_loader.py
+│   │   ├── utils.py
+│   │   └── validator.py
+│   ├── frontend
+│   │   ├── static
+│   │   │   ├── assets
+│   │   │   │   └── loading.txt
+│   │   │   ├── css
+│   │   │   │   └── style.css
+│   │   │   └── js
+│   │   │       ├── api.js
+│   │   │       ├── main.js
+│   │   │       └── ui.js
+│   │   └── templates
+│   │       └── index.html
+│   ├── main.py
+│   ├── matrice_ops
+│   │   ├── __init__.py
+│   │   ├── arithmatics
+│   │   │   ├── __init__.py
+│   │   │   ├── addition.py
+│   │   │   ├── exponential.py
+│   │   │   ├── fraction.py
+│   │   │   ├── multiplication.py
+│   │   │   └── subtraction.py
+│   │   └── linalg
+│   │       ├── __init__.py
+│   │       ├── determinant.py
+│   │       ├── inverse.py
+│   │       ├── rank.py
+│   │       └── transpose.py
+│   ├── preprocessor
+│   │   ├── __init__.py
+│   │   ├── base_cleaner.py
+│   │   ├── cleaner.py
+│   │   ├── encoder.py
+│   │   ├── imputer.py
+│   │   ├── outlier_handler.py
+│   │   └── scaler.py
+│   ├── regressor
+│   │   ├── __init__.py
+│   │   ├── __pycache__
+│   │   │   ├── __init__.cpython-311.pyc
+│   │   │   ├── linear_regression.cpython-311.pyc
+│   │   │   ├── metrics.cpython-311.pyc
+│   │   │   ├── model_base.cpython-311.pyc
+│   │   │   └── preprocessing.cpython-311.pyc
+│   │   ├── linear_regression.py
+│   │   ├── metrics.py
+│   │   ├── model_base.py
+│   │   └── preprocessing.py
+│   └── visualizations
+│       ├── __init__.py
+│       ├── __pycache__
+│       │   ├── __init__.cpython-311.pyc
+│       │   ├── base_plotter.cpython-311.pyc
+│       │   ├── box_plot.cpython-311.pyc
+│       │   ├── correlation_heatmap.cpython-311.pyc
+│       │   ├── histogram.cpython-311.pyc
+│       │   ├── pair_plot.cpython-311.pyc
+│       │   ├── scatter_plot.cpython-311.pyc
+│       │   └── utils.cpython-311.pyc
+│       ├── base_plotter.py
+│       ├── box_plot.py
+│       ├── correlation_heatmap.py
+│       ├── histogram.py
+│       ├── pair_plot.py
+│       ├── scatter_plot.py
+│       └── utils.py
+└── docker
+    ├── docker-compose.yml
+    ├── dockerfile
+    ├── entrypoint.sh
+    ├── nginx.conf
+    └── requirements.txt
+
+20 directories, 81 files
 ```
 
 ## 🐳 Docker Setup
@@ -166,62 +195,9 @@ docker-compose logs app
 ## 📦 Docker Configuration Files
 
 ### docker-compose.yml
-```yaml
-version: '3.8'
-
-services:
-  app:
-    build: 
-      context: .
-      dockerfile: docker/Dockerfile
-    ports:
-      - "5000:5000"
-    environment:
-      - FLASK_ENV=production
-      - PYTHONUNBUFFERED=1
-    volumes:
-      - ./data:/app/data
-    restart: unless-stopped
-
-  nginx:
-    image: nginx:alpine
-    ports:
-      - "80:80"
-    volumes:
-      - ./docker/nginx.conf:/etc/nginx/nginx.conf
-    depends_on:
-      - app
-```
 
 ### docker/Dockerfile
-```dockerfile
-FROM python:3.9-slim
 
-WORKDIR /app
-
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
-    gcc \
-    g++ \
-    && rm -rf /var/lib/apt/lists/*
-
-# Copy requirements and install Python dependencies
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-
-# Copy application code
-COPY app/ ./app/
-COPY main.py run.py ./
-
-# Create data directory
-RUN mkdir -p /app/data
-
-# Expose port
-EXPOSE 5000
-
-# Run the application
-CMD ["python", "run.py"]
-```
 
 ## 🧮 Algorithm Complexity Analysis
 
