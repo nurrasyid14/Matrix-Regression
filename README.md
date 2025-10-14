@@ -41,18 +41,60 @@ A comprehensive web application for matrix operations and regression analysis bu
 Matrix-Regression/
 ├── app/
 │   ├── __init__.py
-│   ├── dataset_receiver/
+│   ├── [data_profiler]
 │   │   ├── __init__.py
-│   │   └── receiver.py
-│   ├── operations/
+│   │   ├── correlation_overview.py
+│   │   ├── missing_values.py
+│   │   ├── profiler.py
+│   │   ├── summary_stats.py
+│   │   └── type_overview.py
+│   ├── [dataset_receiver]
 │   │   ├── __init__.py
-│   │   └── basic_ops.py
-│   ├── linalg/
+│   │   ├── base_loader.py
+│   │   ├── csv_loader.py
+│   │   ├── dataset_gate.py
+│   │   ├── excel_loader.py
+│   │   ├── json_loader.py
+│   │   ├── utils.py
+│   │   └── validator.py
+│   ├── [matrice_ops]
+│   │   ├── [arithmatics]
+│   │   │   ├── __init__.py
+│   │   │   ├── addition.py
+│   │   │   ├── exponential.py
+│   │   │   ├── fraction.py
+│   │   │   ├── multiplication.py
+│   │   │   └── subtraction.py
+│   │   ├── [linalg]
+│   │   │   ├── __init__.py
+│   │   │   ├── determinant.py
+│   │   │   ├── inverse.py
+│   │   │   ├── rank.py
+│   │   │   └── transpose.py
+│   │   └── __init__.py
+│   ├── [preprocessor]
 │   │   ├── __init__.py
-│   │   └── linalg_ops.py
-│   ├── regressor/
+│   │   ├── base_cleaner.py
+│   │   ├── cleaner.py
+│   │   ├── encoder.py
+│   │   ├── imputer.py
+│   │   ├── outlier_handler.py
+│   │   └── scaler.py
+│   ├── [regressor]
 │   │   ├── __init__.py
-│   │   └── regression.py
+│   │   ├── linear_regression.py
+│   │   ├── metrics.py
+│   │   ├── model_base.py
+│   │   └── preprocessing.py
+│   └── [visualizations]
+│   │    ├── __init__.py
+│   │    ├── base_plotter.py
+│   │    ├── box_plot.py
+│   │    ├── correlation_heatmap.py
+│   │    ├── histogram.py
+│   │    ├── pair_plot.py
+│   │    ├── scatter_plot.py
+│   │    └── utils.py
 │   └── frontend/
 │       ├── __init__.py
 │       ├── app.py
