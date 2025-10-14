@@ -1,21 +1,22 @@
-# docker/Dockerfile
-
+# Base image
 FROM python:3.11-slim
 
+# Set working directory
 WORKDIR /app
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y build-essential && rm -rf /var/lib/apt/lists/*
+# Copy requirements first for caching
+COPY ../docker/requirements.txt .
 
-# Copy and install Python dependencies
-COPY docker/requirements.txt .
+# Install dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy entire project
-COPY .. .
+# Copy the app
+COPY ../app/ .
 
 # Expose Flask port
 EXPOSE 5000
 
-# Default command to start Flask
-CMD ["flask", "run", "--host=0.0.0.0", "--port=5000"]
+# Entrypoint
+COPY entrypoint.sh .
+RUN chmod +x entrypoint.sh
+ENTRYPOINT ["./entrypoint.sh"]

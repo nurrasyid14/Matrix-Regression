@@ -1,13 +1,28 @@
 version: "3.9"
 
 services:
-  regressor_app:
+  app_backend:
     build:
       context: ..
-      dockerfile: docker/Dockerfile
+      dockerfile: docker/dockerfile
     container_name: regressor_app
-    ports:
-      - "5000:5000"
+    command: ["flask", "run", "--host=0.0.0.0", "--port=5000"]
     environment:
-      - FLASK_APP=app/main.py
+      - FLASK_APP=main.py
       - FLASK_ENV=development
+    volumes:
+      - ../:/app
+    expose:
+      - "5000"
+
+  nginx:
+    image: nginx:1.27
+    container_name: regressor_nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ../app/frontend/templates:/var/www/html:ro
+      - ../app/frontend/static:/var/www/static:ro
+    depends_on:
+      - app_backend
