@@ -12,7 +12,7 @@ from regressor.linear_regression import LinearRegression
 # --- Konfigurasi Aplikasi Flask ---
 # Membuat instance aplikasi.
 # Konfigurasi ini memberi tahu Flask di mana menemukan file HTML dan file statis (CSS/JS)
-app = Flask(_name_, template_folder='frontend/templates', static_folder='frontend/static')
+app = Flask(__name__, template_folder='frontend/templates', static_folder='frontend/static')
 
 # PERBAIKAN: Mengaktifkan CORS untuk mengizinkan permintaan dari frontend
 CORS(app)
