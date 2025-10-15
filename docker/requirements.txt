@@ -9,12 +9,14 @@ Werkzeug==2.3.7
 Jinja2==3.1.2
 openpyxl==3.1.2
 
-#Development & Testing
+Development & Testing
 pytest==7.4.0
 pytest-flask==1.2.0
 black==23.3.0
 flake8==6.0.0
 python-dotenv==1.0.0
+ipython==8.14.0
+jupyter==1.0.0
 
-#API & Data
+API & Data
 requests==2.31.0
