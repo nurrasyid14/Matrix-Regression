@@ -3,7 +3,7 @@ from flask import Flask, request, jsonify
 import os
 import pandas as pd
 from dataset_receiver.dataset_gate import DatasetGate
-from regressor.linear_regression import LinearRegressor  # Your regressor module
+from regressor.linear_regression import LinearRegression
 
 app = Flask(__name__)
 UPLOAD_FOLDER = "uploads"
