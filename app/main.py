@@ -144,6 +144,6 @@ def run_regression_analysis():
         traceback.print_exc() # Mencetak error detail di terminal untuk debugging
         return jsonify({"error": f"Analisis gagal: {str(e)}"}), 500
 
-if _name_ == "_main_":
+if __name__ == "__main__":
     # Jalankan aplikasi dalam mode debug untuk melihat error
     app.run(host="0.0.0.0", port=5000, debug=True)
