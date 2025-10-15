@@ -1,7 +1,7 @@
 import os
 import pandas as pd
 from flask import Flask, request, jsonify, render_template, session
-from flask.cors import CORS  # Impor CORS
+from flask_cors import CORS  # Impor CORS
 from werkzeug.utils import secure_filename
 from sklearn.model_selection import train_test_split
 
