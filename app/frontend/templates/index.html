@@ -11,7 +11,8 @@
     <!-- Chart.js for visualization -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="{{ url_for('frontend.static', filename='css/style.css') }}">
+    <!-- PERBAIKAN: Menggunakan 'static' bukan 'frontend.static' untuk path yang benar -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -35,14 +36,16 @@
                 <!-- Bagian 1.A: Unggah Dataset -->
                 <div class="mb-6">
                     <label for="file-upload" class="block text-lg font-semibold mb-2">Unggah Dataset Anda</label>
-                    <p class="text-sm text-gray-500 mb-3">Format yang didukung: .csv, .xlsx, .json.</p>
+                    <p class="text-sm text-gray-500 mb-3">Format yang didukung: .csv, .xlsx.</p>
                     <div class="flex items-center space-x-4">
-                        <input type="file" id="file-upload" class="hidden" accept=".csv,.xlsx,.json">
+                        <input type="file" id="file-upload" class="hidden" accept=".csv,.xlsx">
                         <label for="file-upload" class="cursor-pointer bg-indigo-600 text-white px-5 py-2 rounded-lg font-semibold hover:bg-indigo-700 transition-colors">
                             Pilih File
                         </label>
                         <span id="file-name" class="text-gray-600">Belum ada file dipilih</span>
                     </div>
+                    <!-- PENAMBAHAN: Area untuk menampilkan pesan status atau error -->
+                    <div id="status-message" class="mt-4 text-sm font-semibold hidden p-3 rounded-lg"></div>
                 </div>
 
                 <!-- Bagian 1.B: Pemilihan Fitur & Target (Awalnya tersembunyi) -->
@@ -115,10 +118,10 @@
     </div>
 
     <!-- JavaScript Files -->
-    <!-- Note: In a real Flask app, use url_for for these -->
-    <script src="{{ url_for('frontend.static', filename='js/api.js') }}"></script>
-    <script src="{{ url_for('frontend.static', filename='js/ui.js') }}"></script>
-    <script src="{{ url_for('frontend.static', filename='js/main.js') }}"></script>
+    <!-- PERBAIKAN: Menggunakan 'static' bukan 'frontend.static' untuk path yang benar -->
+    <script src="{{ url_for('static', filename='js/api.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/ui.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
 
 </body>
 </html>
