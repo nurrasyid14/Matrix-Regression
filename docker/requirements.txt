@@ -18,5 +18,5 @@ python-dotenv==1.0.0
 ipython==8.14.0
 jupyter==1.0.0
 
-API & Data
+#API & Data
 requests==2.31.0
