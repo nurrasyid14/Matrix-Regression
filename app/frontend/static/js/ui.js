@@ -129,13 +129,17 @@ const UI = (function () {
     document.getElementById("equation").textContent = resp.equation || resp.summary || "—";
 
     // metrics (if available)
-    if (resp.metrics) {
-      document.getElementById("metric-r2").textContent = resp.metrics["R²"] ?? resp.r2 ?? "—";
-      document.getElementById("metric-mse").textContent = resp.metrics["MSE"] ?? resp.mse ?? "—";
-      document.getElementById("metric-rmse").textContent = resp.metrics["RMSE"] ?? resp.rmse ?? "—";
-      document.getElementById("metric-mae").textContent = resp.metrics["MAE"] ?? resp.mae ?? "—";
-      document.getElementById("metric-ev").textContent = resp.metrics["Explained Variance"] ?? resp.ev ?? "—";
-    }
+    if (Array.isArray(resp.metrics)) {
+        const metricsMap = Object.fromEntries(
+            resp.metrics.map(m => [m.name.toLowerCase(), m.value])
+        );
+        document.getElementById("metric-r2").textContent = metricsMap["r² score"] ?? "—";
+        document.getElementById("metric-mse").textContent = metricsMap["mean squared error"] ?? "—";
+        document.getElementById("metric-rmse").textContent = metricsMap["root mean squared error"] ?? "—";
+        document.getElementById("metric-mae").textContent = metricsMap["mean absolute error"] ?? "—";
+        document.getElementById("metric-ev").textContent = metricsMap["explained variance"] ?? "—";
+        }
+
 
     // coefficients (object or chart data)
     if (resp.featureChartData) {
@@ -147,9 +151,8 @@ const UI = (function () {
     }
 
     // accuracy
-    if (resp.accuracyChartData) {
-      renderAccuracy(resp.accuracyChartData.points, resp.accuracyChartData.line);
-    }
+    if (coefChart) { coefChart.destroy(); coefChart = null; }
+    if (accuracyChart) { accuracyChart.destroy(); accuracyChart = null; }
   }
 
   return {
