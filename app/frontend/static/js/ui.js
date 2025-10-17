@@ -1,145 +1,163 @@
-/**
- * Mengelola semua manipulasi DOM (membuat elemen, menampilkan hasil).
- */
+const UI = (function () {
+  let coefChart = null;
+  let accuracyChart = null;
 
-// Objek untuk menyimpan instance chart agar bisa dihancurkan sebelum membuat yang baru
-const charts = {
-    featureChart: null,
-    accuracyChart: null
-};
+  function clearSelectors() {
+    document.getElementById("feature-selector").innerHTML = "";
+    document.getElementById("target-selector").innerHTML = "";
+    document.getElementById("preview").innerHTML = "";
+  }
 
-const UI = {
-    /**
-     * Mengisi container pemilih kolom dengan checkbox dan radio button.
-     * @param {string[]} columns - Array berisi nama-nama kolom dari dataset.
-     */
-    populateColumnSelectors(columns) {
-        const featureSelector = document.getElementById('feature-selector');
-        const targetSelector = document.getElementById('target-selector');
+  function populateColumnSelectors(columns) {
+    clearSelectors();
+    const featureContainer = document.getElementById("feature-selector");
+    const targetContainer = document.getElementById("target-selector");
 
-        // Kosongkan container sebelum mengisi
-        featureSelector.innerHTML = '';
-        targetSelector.innerHTML = '';
+    columns.forEach(col => {
+      // feature checkbox
+      const wrapper = document.createElement("div");
+      wrapper.className = "flex items-center gap-2 mb-1";
+      const cb = document.createElement("input");
+      cb.type = "checkbox";
+      cb.name = "feature";
+      cb.value = col;
+      cb.id = `feat-${col}`;
+      const lbl = document.createElement("label");
+      lbl.htmlFor = cb.id;
+      lbl.innerText = col;
+      wrapper.appendChild(cb);
+      wrapper.appendChild(lbl);
+      featureContainer.appendChild(wrapper);
 
-        columns.forEach(column => {
-            // Buat checkbox untuk fitur
-            const featureDiv = document.createElement('div');
-            featureDiv.className = 'flex items-center';
-            featureDiv.innerHTML = `
-                <input id="feature-${column}" type="checkbox" value="${column}" name="feature" class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
-                <label for="feature-${column}" class="ml-3 block text-sm text-gray-700">${column}</label>
-            `;
-            featureSelector.appendChild(featureDiv);
+      // target radio
+      const rwrap = document.createElement("div");
+      rwrap.className = "flex items-center gap-2 mb-1";
+      const radio = document.createElement("input");
+      radio.type = "radio";
+      radio.name = "target";
+      radio.value = col;
+      radio.id = `tgt-${col}`;
+      const rlbl = document.createElement("label");
+      rlbl.htmlFor = radio.id;
+      rlbl.innerText = col;
+      rwrap.appendChild(radio);
+      rwrap.appendChild(rlbl);
+      targetContainer.appendChild(rwrap);
+    });
+  }
 
-            // Buat radio button untuk target
-            const targetDiv = document.createElement('div');
-            targetDiv.className = 'flex items-center';
-            targetDiv.innerHTML = `
-                <input id="target-${column}" type="radio" value="${column}" name="target" class="h-4 w-4 border-gray-300 text-indigo-600 focus:ring-indigo-500">
-                <label for="target-${column}" class="ml-3 block text-sm text-gray-700">${column}</label>
-            `;
-            targetSelector.appendChild(targetDiv);
-        });
+  function showPreview(dfRowsHtml) {
+    // A simple HTML-based preview (server can return small HTML if desired)
+    const preview = document.getElementById("preview");
+    preview.innerHTML = dfRowsHtml || "<div class='text-xs text-gray-500'>No preview available</div>";
+  }
 
-        document.getElementById('selectors-container').classList.remove('hidden');
-        document.getElementById('action-button-container').classList.remove('hidden');
-    },
+  function showStatus(msg, isError = false) {
+    const s = document.getElementById("status");
+    s.textContent = msg;
+    s.className = isError ? "text-sm text-red-600" : "text-sm text-gray-600";
+  }
 
-    /**
-     * Menampilkan hasil analisis di UI.
-     * @param {object} results - Objek hasil dari backend.
-     */
-    displayResults(results) {
-        // Tampilkan persamaan
-        const equationEl = document.getElementById('regression-equation');
-        equationEl.textContent = results.equation || 'Gagal memuat persamaan.';
-        
-        // Buat Bar Chart untuk Pengaruh Fitur
-        this.createFeatureChart(results.featureChartData);
+  function resetDashboard() {
+    document.getElementById("equation").textContent = "—";
+    document.getElementById("metric-r2").textContent = "—";
+    document.getElementById("metric-mse").textContent = "—";
+    document.getElementById("metric-rmse").textContent = "—";
+    document.getElementById("metric-mae").textContent = "—";
+    document.getElementById("metric-ev").textContent = "—";
+    if (coefChart) { coefChart.destroy(); coefChart = null; }
+    if (accuracyChart) { accuracyChart.destroy(); accuracyChart = null; }
+  }
 
-        // Buat Scatter Plot untuk Akurasi
-        this.createAccuracyChart(results.accuracyChartData);
+  function renderCoefficients(labels, data) {
+    const ctx = document.getElementById("coef-chart").getContext("2d");
+    if (coefChart) coefChart.destroy();
+    coefChart = new Chart(ctx, {
+      type: "bar",
+      data: {
+        labels,
+        datasets: [{
+          label: "Coefficient",
+          data,
+          backgroundColor: labels.map(() => "rgba(59,130,246,0.7)")
+        }]
+      },
+      options: { responsive: true, maintainAspectRatio: false }
+    });
+  }
 
-        document.getElementById('output-card').classList.remove('hidden');
-    },
-
-    createFeatureChart(data) {
-        const ctx = document.getElementById('feature-chart').getContext('2d');
-        if (charts.featureChart) {
-            charts.featureChart.destroy();
+  function renderAccuracy(points, line) {
+    const ctx = document.getElementById("accuracy-chart").getContext("2d");
+    if (accuracyChart) accuracyChart.destroy();
+    const scatterData = {
+      datasets: [
+        {
+          label: "Actual vs Predicted",
+          data: points.map(p => ({ x: p.x, y: p.y })),
+          showLine: false,
+          pointRadius: 4,
+          pointBackgroundColor: "rgba(16,185,129,0.9)"
+        },
+        {
+          label: "Identity",
+          data: line.map(p => ({ x: p.x, y: p.y })),
+          type: "line",
+          borderColor: "rgba(79,70,229,0.8)",
+          borderWidth: 1,
+          fill: false,
+          showLine: true,
+          pointRadius: 0
         }
-        charts.featureChart = new Chart(ctx, {
-            type: 'bar',
-            data: data,
-            options: {
-                responsive: true,
-                plugins: { legend: { display: false } },
-                scales: {
-                    y: { beginAtZero: true, title: { display: true, text: 'Nilai Koefisien' } },
-                    x: { title: { display: true, text: 'Fitur' } }
-                }
-            }
-        });
-    },
+      ]
+    };
 
-    createAccuracyChart(data) {
-        const ctx = document.getElementById('accuracy-chart').getContext('2d');
-        if (charts.accuracyChart) {
-            charts.accuracyChart.destroy();
-        }
-        charts.accuracyChart = new Chart(ctx, {
-            type: 'scatter',
-            data: {
-                datasets: [
-                    {
-                        label: 'Aktual vs. Prediksi',
-                        data: data.points,
-                        backgroundColor: 'rgba(59, 130, 246, 0.5)'
-                    },
-                    {
-                        label: 'Garis Ideal',
-                        data: data.line,
-                        type: 'line',
-                        borderColor: 'rgba(239, 68, 68, 1)',
-                        borderWidth: 2,
-                        fill: false
-                    }
-                ]
-            },
-            options: {
-                responsive: true,
-                scales: {
-                    x: { type: 'linear', position: 'bottom', title: { display: true, text: 'Nilai Aktual' } },
-                    y: { title: { display: true, text: 'Nilai Prediksi' } }
-                }
-            }
-        });
-    },
+    accuracyChart = new Chart(ctx, {
+      type: "scatter",
+      data: scatterData,
+      options: {
+        scales: {
+          x: { title: { display: true, text: "Actual" } },
+          y: { title: { display: true, text: "Predicted" } }
+        },
+        plugins: { legend: { display: true } }
+      }
+    });
+  }
 
-    /**
-     * Menampilkan atau menyembunyikan loading spinner.
-     * @param {boolean} show - True untuk menampilkan, false untuk menyembunyikan.
-     */
-    toggleLoading(show) {
-        const spinner = document.getElementById('loading-spinner');
-        const resultsContainer = document.getElementById('results-container');
-        
-        if (show) {
-            spinner.classList.remove('hidden');
-            resultsContainer.classList.add('hidden');
-            document.getElementById('output-card').classList.remove('hidden');
-        } else {
-            spinner.classList.add('hidden');
-            resultsContainer.classList.remove('hidden');
-        }
-    },
+  function displayResults(resp) {
+    // summary
+    document.getElementById("equation").textContent = resp.equation || resp.summary || "—";
 
-    /**
-     * Menampilkan pesan error sederhana kepada pengguna.
-     * @param {string} message - Pesan error yang akan ditampilkan.
-     */
-    showError(message) {
-        alert(message); // Untuk kesederhanaan, kita gunakan alert.
+    // metrics (if available)
+    if (resp.metrics) {
+      document.getElementById("metric-r2").textContent = resp.metrics["R²"] ?? resp.r2 ?? "—";
+      document.getElementById("metric-mse").textContent = resp.metrics["MSE"] ?? resp.mse ?? "—";
+      document.getElementById("metric-rmse").textContent = resp.metrics["RMSE"] ?? resp.rmse ?? "—";
+      document.getElementById("metric-mae").textContent = resp.metrics["MAE"] ?? resp.mae ?? "—";
+      document.getElementById("metric-ev").textContent = resp.metrics["Explained Variance"] ?? resp.ev ?? "—";
     }
-};
 
+    // coefficients (object or chart data)
+    if (resp.featureChartData) {
+      renderCoefficients(resp.featureChartData.labels, resp.featureChartData.datasets[0].data);
+    } else if (resp.coefficients) {
+      const keys = Object.keys(resp.coefficients).slice(1); // skip intercept
+      const vals = Object.values(resp.coefficients).slice(1);
+      renderCoefficients(keys, vals);
+    }
+
+    // accuracy
+    if (resp.accuracyChartData) {
+      renderAccuracy(resp.accuracyChartData.points, resp.accuracyChartData.line);
+    }
+  }
+
+  return {
+    populateColumnSelectors,
+    showPreview,
+    showStatus,
+    resetDashboard,
+    displayResults,
+    clearSelectors
+  };
+})();

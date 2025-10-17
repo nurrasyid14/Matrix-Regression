@@ -1,66 +1,60 @@
 /**
- * Mengelola semua komunikasi (request) ke API backend Flask.
+ * API.js — Handles all communication with the Flask backend.
+ * Works with Flask sessions (credentials included) and supports multiple regression types.
  */
 
 const API = {
-    /**
-     * Mengirim file ke backend untuk diunggah dan diproses.
-     * @param {File} file - File yang akan diunggah.
-     * @returns {Promise<object>} - Promise yang akan resolve dengan data hasil (misal: { columns: [...] }).
-     */
-    async uploadFile(file) {
-        const formData = new FormData();
-        formData.append('dataset', file);
+  /**
+   * Upload dataset to the backend.
+   * @param {File} file
+   * @returns {Promise<object>} Response containing column names, etc.
+   */
+  async uploadFile(file) {
+    const formData = new FormData();
+    formData.append("dataset", file);
 
-        try {
-            // Ganti '/api/upload' dengan endpoint Flask Anda yang sebenarnya
-            const response = await fetch('/api/upload', {
-                method: 'POST',
-                body: formData,
-            });
+    try {
+      const response = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+        credentials: "include", // <--- keep session active in Flask
+      });
 
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || 'Gagal mengunggah file.');
-            }
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({ error: response.statusText }));
+        throw new Error(err.error || "Gagal mengunggah file ke server.");
+      }
 
-            return await response.json();
-        } catch (error) {
-            console.error('Error in uploadFile:', error);
-            throw error; // Lemparkan error agar bisa ditangkap di main.js
-        }
-    },
+      return await response.json();
+    } catch (error) {
+      console.error("Error in uploadFile:", error);
+      throw error;
+    }
+  },
 
-    /**
-     * Mengirim konfigurasi analisis (fitur & target) ke backend.
-     * @param {string[]} selectedFeatures - Array nama kolom fitur yang dipilih.
-     * @param {string} selectedTarget - Nama kolom target yang dipilih.
-     * @returns {Promise<object>} - Promise yang akan resolve dengan hasil analisis.
-     */
-    async runAnalysis(selectedFeatures, selectedTarget) {
-        try {
-            // Ganti '/api/run-regression' dengan endpoint Flask Anda yang sebenarnya
-            const response = await fetch('/api/run-regression', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    features: selectedFeatures,
-                    target: selectedTarget,
-                }),
-            });
+  /**
+   * Run regression analysis.
+   * @param {object} payload - Configuration { features, target, modelType, degree?, alpha? }
+   * @returns {Promise<object>} Response with model summary, metrics, and charts
+   */
+  async runAnalysis(payload) {
+    try {
+      const response = await fetch("/api/run-regression", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+        credentials: "include", // <--- essential for Flask session persistence
+      });
 
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || 'Gagal menjalankan analisis.');
-            }
-            
-            return await response.json();
-        } catch (error) {
-            console.error('Error in runAnalysis:', error);
-            throw error;
-        }
-    },
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({ error: response.statusText }));
+        throw new Error(err.error || "Gagal menjalankan analisis regresi.");
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error("Error in runAnalysis:", error);
+      throw error;
+    }
+  },
 };
-

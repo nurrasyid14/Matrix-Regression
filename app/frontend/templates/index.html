@@ -1,127 +1,152 @@
-<!--index.html-->
-
 <!DOCTYPE html>
-<html lang="id">
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Regressor Matrice - Analisis Regresi Linear</title>
-    <!-- Tailwind CSS for styling -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Chart.js for visualization -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- Custom CSS -->
-    <!-- PERBAIKAN: Menggunakan 'static' bukan 'frontend.static' untuk path yang benar -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        body { font-family: 'Inter', sans-serif; }
-    </style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>RegressorMatrice — Dashboard</title>
+
+  <!-- Tailwind for quick styling -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <style>
+    body { font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; }
+    .card { background: white; border-radius: 12px; box-shadow: 0 4px 18px rgba(16,24,40,0.06); padding: 1.25rem; }
+    .metric { min-width: 120px; }
+  </style>
 </head>
-<body class="bg-gray-50 text-gray-800">
+<body class="bg-gray-50 text-gray-800 p-6">
 
-    <div class="container mx-auto p-4 md:p-8">
-        <header class="text-center mb-10">
-            <h1 class="text-4xl font-bold text-gray-900">Regressor Matrice</h1>
-            <p class="text-lg text-gray-600 mt-2">Platform Analisis Regresi Linear Ganda Interaktif</p>
-        </header>
+  <div class="max-w-7xl mx-auto grid gap-6">
+    <header class="flex items-center justify-between">
+      <div>
+        <h1 class="text-2xl font-bold">RegressorMatrice</h1>
+        <p class="text-sm text-gray-600">Matrix-based Regression Dashboard</p>
+      </div>
+      <div class="text-sm text-gray-500">Local dev</div>
+    </header>
 
-        <main class="space-y-8">
-            <!-- Card 1: Input & Konfigurasi -->
-            <div id="config-card" class="bg-white p-6 md:p-8 rounded-2xl shadow-lg border border-gray-200">
-                <h2 class="text-2xl font-bold mb-6 border-b pb-4">1. Input & Konfigurasi</h2>
-                
-                <!-- Bagian 1.A: Unggah Dataset -->
-                <div class="mb-6">
-                    <label for="file-upload" class="block text-lg font-semibold mb-2">Unggah Dataset Anda</label>
-                    <p class="text-sm text-gray-500 mb-3">Format yang didukung: .csv, .xlsx.</p>
-                    <div class="flex items-center space-x-4">
-                        <input type="file" id="file-upload" class="hidden" accept=".csv,.xlsx">
-                        <label for="file-upload" class="cursor-pointer bg-indigo-600 text-white px-5 py-2 rounded-lg font-semibold hover:bg-indigo-700 transition-colors">
-                            Pilih File
-                        </label>
-                        <span id="file-name" class="text-gray-600">Belum ada file dipilih</span>
-                    </div>
-                    <!-- PENAMBAHAN: Area untuk menampilkan pesan status atau error -->
-                    <div id="status-message" class="mt-4 text-sm font-semibold hidden p-3 rounded-lg"></div>
-                </div>
+    <!-- Upload & Controls -->
+    <section class="card">
+      <div class="grid md:grid-cols-3 gap-6">
+        <div>
+          <label class="block text-sm font-medium mb-2">Upload dataset (.csv, .xlsx, .json)</label>
+          <div class="flex items-center gap-3">
+            <input id="file-upload" type="file" accept=".csv,.xlsx,.xls,.json" class="hidden">
+            <label for="file-upload" id="btn-choose" class="bg-indigo-600 text-white px-4 py-2 rounded cursor-pointer">Choose file</label>
+            <div id="file-name" class="text-sm text-gray-600">No file chosen</div>
+          </div>
+          <p id="upload-hint" class="text-xs text-gray-500 mt-2">Only numeric columns will be used.</p>
+        </div>
 
-                <!-- Bagian 1.B: Pemilihan Fitur & Target (Awalnya tersembunyi) -->
-                <div id="selectors-container" class="hidden mt-8">
-                    <h3 class="text-lg font-semibold mb-4">Pilih Kolom Fitur (X) dan Target (Y)</h3>
-                    <div class="grid md:grid-cols-2 gap-8">
-                        <!-- Kolom Fitur (X) -->
-                        <div>
-                            <div class="flex justify-between items-center mb-3">
-                                <h4 class="font-semibold">Kolom Fitur (Variabel Independen)</h4>
-                                <div class="space-x-2">
-                                    <button id="select-all-features" class="text-xs bg-gray-200 px-2 py-1 rounded hover:bg-gray-300">Pilih Semua</button>
-                                    <button id="deselect-all-features" class="text-xs bg-gray-200 px-2 py-1 rounded hover:bg-gray-300">Hapus Semua</button>
-                                </div>
-                            </div>
-                            <div id="feature-selector" class="h-48 overflow-y-auto border rounded-lg p-3 bg-gray-50 space-y-2">
-                                <!-- Checkbox akan diisi oleh JavaScript -->
-                            </div>
-                        </div>
-                        <!-- Kolom Target (Y) -->
-                        <div>
-                             <h4 class="font-semibold mb-3">Kolom Target (Variabel Dependen)</h4>
-                             <div id="target-selector" class="h-48 overflow-y-auto border rounded-lg p-3 bg-gray-50 space-y-2">
-                                <!-- Radio button akan diisi oleh JavaScript -->
-                            </div>
-                        </div>
-                    </div>
-                </div>
+        <div>
+          <label class="block text-sm font-medium mb-2">Regression Type</label>
+          <select id="regression-type" class="w-full border rounded px-3 py-2">
+            <option value="linear">Linear Regression</option>
+            <option value="ridge">Ridge Regression</option>
+            <option value="polynomial">Polynomial Regression</option>
+          </select>
 
-                <!-- Bagian 1.C: Tombol Aksi (Awalnya tersembunyi) -->
-                <div id="action-button-container" class="hidden mt-8 text-center">
-                    <button id="run-analysis-btn" class="bg-green-600 text-white px-8 py-3 rounded-lg font-bold text-lg hover:bg-green-700 transition-colors shadow-md">
-                        Jalankan Analisis Regresi
-                    </button>
-                </div>
-            </div>
+          <div id="polynomial-options" class="mt-3 hidden">
+            <label class="block text-sm font-medium mb-1">Polynomial Degree</label>
+            <input id="poly-degree" type="number" min="2" max="6" value="2" class="w-28 border rounded px-2 py-1">
+          </div>
 
-            <!-- Card 2: Output & Hasil Analisis -->
-            <div id="output-card" class="bg-white p-6 md:p-8 rounded-2xl shadow-lg border border-gray-200 hidden">
-                <h2 class="text-2xl font-bold mb-6 border-b pb-4">2. Hasil Analisis</h2>
-                
-                <div id="loading-spinner" class="text-center py-10 hidden">
-                    <div class="loader"></div>
-                    <p class="mt-4 text-gray-600">Menganalisis data, mohon tunggu...</p>
-                </div>
+          <div id="ridge-options" class="mt-3 hidden">
+            <label class="block text-sm font-medium mb-1">Ridge α</label>
+            <input id="ridge-alpha" type="number" step="0.1" min="0" value="1.0" class="w-28 border rounded px-2 py-1">
+          </div>
+        </div>
 
-                <div id="results-container" class="space-y-8">
-                    <!-- Bagian 2.A: Persamaan Regresi -->
-                    <div>
-                        <h3 class="text-xl font-semibold mb-3">Persamaan Model Regresi</h3>
-                        <div id="regression-equation" class="bg-gray-100 p-4 rounded-lg text-center font-mono text-sm md:text-base overflow-x-auto"></div>
-                    </div>
+        <div>
+          <label class="block text-sm font-medium mb-2">Actions</label>
+          <div class="flex gap-3">
+            <button id="btn-run" class="bg-green-600 text-white px-4 py-2 rounded font-semibold">Run Analysis</button>
+            <button id="btn-reset" class="bg-gray-200 px-4 py-2 rounded">Reset</button>
+          </div>
 
-                    <!-- Visualisasi -->
-                    <div class="grid md:grid-cols-2 gap-8 pt-6 border-t mt-6">
-                        <!-- Bagian 2.B: Visualisasi Pengaruh Fitur -->
-                        <div>
-                            <h3 class="text-xl font-semibold mb-3 text-center">Pengaruh Fitur (Koefisien)</h3>
-                            <canvas id="feature-chart"></canvas>
-                        </div>
-                        <!-- Bagian 2.C: Visualisasi Akurasi Model -->
-                        <div>
-                            <h3 class="text-xl font-semibold mb-3 text-center">Akurasi Model (Aktual vs. Prediksi)</h3>
-                            <canvas id="accuracy-chart"></canvas>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </main>
-    </div>
+          <div id="status" class="mt-3 text-sm text-gray-600"></div>
+        </div>
+      </div>
+    </section>
 
-    <!-- JavaScript Files -->
-    <!-- PERBAIKAN: Menggunakan 'static' bukan 'frontend.static' untuk path yang benar -->
-    <script src="{{ url_for('static', filename='js/api.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/ui.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <!-- Feature / Target selectors -->
+    <section class="card">
+      <h2 class="font-semibold mb-3">Select Features & Target</h2>
 
+      <div class="grid md:grid-cols-3 gap-6">
+        <div>
+          <h3 class="text-sm font-medium mb-2">Features (X)</h3>
+          <div id="feature-selector" class="h-44 overflow-y-auto border rounded p-3 bg-gray-50"></div>
+          <div class="mt-2 flex gap-2">
+            <button id="select-all-features" class="text-xs bg-gray-200 px-2 py-1 rounded">Select All</button>
+            <button id="deselect-all-features" class="text-xs bg-gray-200 px-2 py-1 rounded">Deselect All</button>
+          </div>
+        </div>
+
+        <div>
+          <h3 class="text-sm font-medium mb-2">Target (Y)</h3>
+          <div id="target-selector" class="h-44 overflow-y-auto border rounded p-3 bg-gray-50"></div>
+        </div>
+
+        <div>
+          <h3 class="text-sm font-medium mb-2">Preview (first 5 rows)</h3>
+          <div id="preview" class="h-44 overflow-y-auto border rounded p-3 bg-gray-50 text-xs"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Results Dashboard -->
+    <section class="grid md:grid-cols-3 gap-6">
+      <div class="card md:col-span-1">
+        <h3 class="font-semibold mb-3">Summary</h3>
+        <div id="equation" class="text-sm font-mono text-gray-700 mb-4">—</div>
+
+        <h4 class="text-sm font-semibold mb-2">Model Metrics</h4>
+        <div id="metrics" class="grid grid-cols-2 gap-3">
+          <div class="metric p-3 bg-gray-50 rounded">
+            <div class="text-xs text-gray-500">R²</div>
+            <div id="metric-r2" class="text-lg font-bold">—</div>
+          </div>
+          <div class="metric p-3 bg-gray-50 rounded">
+            <div class="text-xs text-gray-500">MSE</div>
+            <div id="metric-mse" class="text-lg font-bold">—</div>
+          </div>
+          <div class="metric p-3 bg-gray-50 rounded">
+            <div class="text-xs text-gray-500">RMSE</div>
+            <div id="metric-rmse" class="text-lg font-bold">—</div>
+          </div>
+          <div class="metric p-3 bg-gray-50 rounded">
+            <div class="text-xs text-gray-500">MAE</div>
+            <div id="metric-mae" class="text-lg font-bold">—</div>
+          </div>
+          <div class="metric p-3 bg-gray-50 rounded col-span-2">
+            <div class="text-xs text-gray-500">Explained Variance</div>
+            <div id="metric-ev" class="text-lg font-bold">—</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card md:col-span-2">
+        <h3 class="font-semibold mb-3">Feature Coefficients</h3>
+        <canvas id="coef-chart" height="120"></canvas>
+
+        <hr class="my-4">
+
+        <h3 class="font-semibold mb-3">Actual vs Predicted</h3>
+        <canvas id="accuracy-chart" height="180"></canvas>
+      </div>
+    </section>
+
+    <footer class="text-xs text-gray-400 text-center mt-6">RegressorMatrice — matrix-driven regression</footer>
+  </div>
+
+  <!-- Scripts (application JS stored in static/js/) -->
+  <script src="{{ url_for('static', filename='js/api.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/ui.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/main.js') }}"></script>
 </body>
 </html>
