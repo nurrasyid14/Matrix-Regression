@@ -4,6 +4,7 @@ import os
 import pandas as pd
 from flask import Flask, request, jsonify, render_template, session
 from flask_cors import CORS
+from flask_session import Session
 from werkzeug.utils import secure_filename
 from sklearn.model_selection import train_test_split
 
@@ -31,11 +32,15 @@ CORS(app, supports_credentials=True)
 UPLOAD_FOLDER = "uploads_temp"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
+# Flask session configuration
 app.config.update(
     UPLOAD_FOLDER=UPLOAD_FOLDER,
     SECRET_KEY="super-secure-key",
     SESSION_TYPE="filesystem",
 )
+
+# Enable server-side sessions
+Session(app)
 
 # -------------------------------------
 # Routes
@@ -68,11 +73,11 @@ def upload_dataset():
         df = DatasetGate.quick_load(filepath, numeric_only=True)
         os.remove(filepath)
 
-        # ✅ Save to session and mark modified
+        # Save to session
         session["dataset_json"] = df.to_json(orient="split")
         session.modified = True
 
-        # ✅ Include preview for frontend
+        # Include preview for frontend
         preview_html = df.head(5).to_html(classes="table table-sm", index=False)
 
         return jsonify({
@@ -110,6 +115,7 @@ def run_regression_api():
         X = df[features]
         y = df[target]
 
+        # Train/test split
         X_train, X_test, y_train, y_test = train_test_split(
             X, y, test_size=0.2, random_state=42
         )
@@ -122,7 +128,7 @@ def run_regression_api():
         else:
             model = LinearRegression()
 
-        # Fit and predict
+        # Fit model and predict
         model.fit(X_train.to_numpy(), y_train.to_numpy())
         predictions = model.predict(X_test.to_numpy())
 
@@ -131,7 +137,6 @@ def run_regression_api():
         mse = mean_squared_error(y_test, predictions)
         rmse = mse ** 0.5
 
-        # ✅ Use dict for frontend compatibility
         metrics_summary = {
             "R²": round(r2, 4),
             "MSE": round(mse, 4),
@@ -140,12 +145,7 @@ def run_regression_api():
         }
 
         # Prepare coefficients & equation
-        coeffs = (
-            model.coefficients
-            if hasattr(model, "coefficients")
-            else getattr(model, "coef_", [])
-        )
-
+        coeffs = getattr(model, "coefficients", getattr(model, "coef_", []))
         intercept = 0.0
         feature_coeffs = []
 
@@ -153,14 +153,13 @@ def run_regression_api():
             intercept = coeffs[0]
             feature_coeffs = coeffs[1:] if len(coeffs) > 1 else []
 
-        if len(feature_coeffs) > 0:
-            equation = f"{target} = {intercept:.4f} + " + " + ".join(
-                [f"({coef:.4f} * {feat})" for coef, feat in zip(feature_coeffs, features)]
-            )
-        else:
-            equation = f"{target} = {intercept:.4f}"
+        equation = (
+            f"{target} = {intercept:.4f} + "
+            + " + ".join([f"({coef:.4f} * {feat})" for coef, feat in zip(feature_coeffs, features)])
+            if feature_coeffs else f"{target} = {intercept:.4f}"
+        )
 
-        # ✅ Feature influence chart
+        # Feature influence chart
         feature_chart = {
             "labels": features,
             "datasets": [{
@@ -170,19 +169,17 @@ def run_regression_api():
             }]
         }
 
-        # ✅ Actual vs Predicted scatter chart
+        # Actual vs Predicted scatter chart
         scatter_chart = {
             "points": [
-                {"x": float(actual), "y": float(pred)}
-                for actual, pred in zip(y_test.tolist(), predictions.flatten().tolist())
+                {"x": float(a), "y": float(p)} for a, p in zip(y_test.tolist(), predictions.flatten().tolist())
             ],
             "line": [
                 {"x": float(min(y_test)), "y": float(min(y_test))},
-                {"x": float(max(y_test)), "y": float(max(y_test))},
+                {"x": float(max(y_test)), "y": float(max(y_test))}
             ]
         }
 
-        # ✅ Return consistent structure
         return jsonify({
             "modelType": model_type,
             "equation": equation,
