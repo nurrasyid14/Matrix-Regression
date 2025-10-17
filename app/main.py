@@ -1,3 +1,5 @@
+# app/main.py
+
 import os
 import pandas as pd
 from flask import Flask, request, jsonify, render_template, session
@@ -5,7 +7,7 @@ from flask_cors import CORS
 from werkzeug.utils import secure_filename
 from sklearn.model_selection import train_test_split
 
-# Custom modules
+# Custom imports
 from dataset_receiver.dataset_gate import DatasetGate
 from regressor import (
     LinearRegression,
@@ -15,10 +17,15 @@ from regressor import (
     mean_squared_error,
 )
 
-# -------------------------------
+# -------------------------------------
 # Flask Configuration
-# -------------------------------
-app = Flask(__name__, template_folder='frontend/templates', static_folder='frontend/static')
+# -------------------------------------
+app = Flask(
+    __name__,
+    template_folder="frontend/templates",
+    static_folder="frontend/static"
+)
+
 CORS(app, supports_credentials=True)
 
 UPLOAD_FOLDER = "uploads_temp"
@@ -26,23 +33,25 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 app.config.update(
     UPLOAD_FOLDER=UPLOAD_FOLDER,
-    SECRET_KEY='super-secure-key',
-    SESSION_TYPE='filesystem'  # Keeps session working across Docker/Nginx
+    SECRET_KEY="super-secure-key",
+    SESSION_TYPE="filesystem",
 )
 
-# -------------------------------
+# -------------------------------------
 # Routes
-# -------------------------------
-
+# -------------------------------------
 @app.route("/")
 def index():
+    """Serve main web interface"""
     return render_template("index.html")
 
-# -------------------------------
+
+# -------------------------------------
 # Upload Dataset
-# -------------------------------
+# -------------------------------------
 @app.route("/api/upload", methods=["POST"])
 def upload_dataset():
+    """Upload and cache dataset to user session"""
     if "dataset" not in request.files:
         return jsonify({"error": "No file key named 'dataset' found."}), 400
 
@@ -52,37 +61,42 @@ def upload_dataset():
 
     try:
         filename = secure_filename(file.filename)
-        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        filepath = os.path.join(app.config["UPLOAD_FOLDER"], filename)
         file.save(filepath)
 
-        # Load dataset using DatasetGate
+        # Load dataset
         df = DatasetGate.quick_load(filepath, numeric_only=True)
         os.remove(filepath)
 
-        # Store dataset in session
-        session['dataset_json'] = df.to_json(orient='split')
+        # ✅ Save to session and mark modified
+        session["dataset_json"] = df.to_json(orient="split")
         session.modified = True
 
-        return jsonify({"message": "Dataset uploaded successfully.", "columns": df.columns.tolist()})
+        return jsonify({
+            "message": "Dataset uploaded successfully.",
+            "columns": df.columns.tolist()
+        })
 
     except Exception as e:
         return jsonify({"error": f"Upload failed: {str(e)}"}), 500
 
-# -------------------------------
+
+# -------------------------------------
 # Run Regression Analysis
-# -------------------------------
+# -------------------------------------
 @app.route("/api/run-regression", methods=["POST"])
 def run_regression():
-    if 'dataset_json' not in session:
+    """Execute regression and return metrics, coefficients, and charts"""
+    if "dataset_json" not in session:
         return jsonify({"error": "No dataset found in session. Upload first."}), 400
 
     try:
-        df = pd.read_json(session['dataset_json'], orient='split')
+        df = pd.read_json(session["dataset_json"], orient="split")
 
         data = request.get_json()
         features = data.get("features")
         target = data.get("target")
-        model_type = data.get("modelType", "linear")  # linear, ridge, polynomial
+        model_type = data.get("modelType", "linear")
 
         if not features or not target:
             return jsonify({"error": "Missing features or target."}), 400
@@ -90,9 +104,11 @@ def run_regression():
         X = df[features]
         y = df[target]
 
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+        X_train, X_test, y_train, y_test = train_test_split(
+            X, y, test_size=0.2, random_state=42
+        )
 
-        # Select model type
+        # Select model
         if model_type == "ridge":
             model = RidgeRegression(alpha=1.0)
         elif model_type == "polynomial":
@@ -100,6 +116,7 @@ def run_regression():
         else:
             model = LinearRegression()
 
+        # Fit and predict
         model.fit(X_train.to_numpy(), y_train.to_numpy())
         predictions = model.predict(X_test.to_numpy())
 
@@ -107,33 +124,62 @@ def run_regression():
         r2 = r2_score(y_test, predictions)
         mse = mean_squared_error(y_test, predictions)
 
-        coeffs = model.coefficients if hasattr(model, "coefficients") else []
-        equation = (
-            f"{target} = {coeffs[0]:.4f} + "
-            + " + ".join([f"({c:.4f} * {f})" for c, f in zip(coeffs[1:], features)])
-            if len(coeffs) > 1
-            else "Model coefficients not available"
+        # Prepare coefficients & equation
+        coeffs = (
+            model.coefficients
+            if hasattr(model, "coefficients")
+            else getattr(model, "coef_", [])
         )
 
-        response = {
-            "modelType": model_type,
-            "equation": equation,
-            "metrics": {
-                "r2_score": round(r2, 4),
-                "mean_squared_error": round(mse, 4)
-            },
-            "coefficients": dict(zip(["Intercept"] + features, coeffs)),
+        if len(coeffs) > 1:
+            intercept = coeffs[0]
+            feature_coeffs = coeffs[1:]
+            equation = f"{target} = {intercept:.4f} + " + " + ".join(
+                [f"({coef:.4f} * {feat})" for coef, feat in zip(feature_coeffs, features)]
+            )
+        else:
+            equation = "Model coefficients unavailable."
+
+        # Chart data for dashboard
+        feature_chart = {
+            "labels": features,
+            "datasets": [{
+                "label": "Feature Influence",
+                "data": feature_coeffs.tolist(),
+                "backgroundColor": "rgba(54, 162, 235, 0.6)"
+            }]
         }
 
-        return jsonify(response)
+        scatter_chart = {
+            "points": [
+                {"x": float(a), "y": float(p)}
+                for a, p in zip(y_test.tolist(), predictions.flatten().tolist())
+            ]
+        }
+
+        # Dashboard metrics cards
+        metrics_summary = [
+            {"name": "R² Score", "value": round(r2, 4)},
+            {"name": "Mean Squared Error", "value": round(mse, 4)},
+            {"name": "Samples Used", "value": len(X)},
+        ]
+
+        return jsonify({
+            "modelType": model_type,
+            "equation": equation,
+            "metrics": metrics_summary,
+            "featureChart": feature_chart,
+            "scatterChart": scatter_chart,
+        })
 
     except Exception as e:
         import traceback
         traceback.print_exc()
         return jsonify({"error": f"Analysis failed: {str(e)}"}), 500
 
-# -------------------------------
-# Run App
-# -------------------------------
+
+# -------------------------------------
+# Entry Point
+# -------------------------------------
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8000, debug=True)
