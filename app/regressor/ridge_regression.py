@@ -1,47 +1,54 @@
 import numpy as np
-from ..matrice_ops.linalg import inverse
-from ..matrice_ops.linalg import transpose
-from ..matrice_ops.arithmatics import multiplication
+from ..matrice_ops.linalg import inverse, transpose
+from ..matrice_ops import multiplication
 from .model_base import BaseRegressor
 
 
-class LinearRegression(BaseRegressor):
+class RidgeRegression(BaseRegressor):
     """
-    Linear Regression using pure matrix operations.
+    Ridge Regression using pure matrix operations.
 
     Formula:
-        β = (XᵀX)⁻¹ Xᵀy
+        β = (XᵀX + λI)⁻¹ Xᵀy
+
+    Where:
+        λ (lambda) = regularization strength
+        I = identity matrix
     """
 
-    def __init__(self, fit_intercept: bool = True):
+    def __init__(self, alpha: float = 1.0, fit_intercept: bool = True):
+        self.alpha = alpha
         self.fit_intercept = fit_intercept
         self.coefficients = None
         self.fitted = False
 
     def _add_intercept(self, X: np.ndarray) -> np.ndarray:
-        """Add a column of ones to include the intercept."""
+        """Add column of ones if intercept is to be fitted."""
         if not self.fit_intercept:
             return X
         ones = np.ones((X.shape[0], 1))
         return np.hstack((ones, X))
 
     def fit(self, X: np.ndarray, y: np.ndarray):
-        """Fit the linear regression model using normal equations."""
+        """Fit the Ridge Regression model."""
         X = self._add_intercept(X)
         X_T = transpose(X)
 
-        # β = (XᵀX)⁻¹ Xᵀy
+        # Ridge formula: β = (XᵀX + λI)⁻¹ Xᵀy
         XTX = multiplication(X_T, X)
-        XTX_inv = inverse(XTX)
+        I = np.eye(XTX.shape[0])
+        ridge_term = XTX + self.alpha * I
+
+        ridge_inv = inverse(ridge_term)
         XTy = multiplication(X_T, y.reshape(-1, 1))
-        beta = multiplication(XTX_inv, XTy)
+        beta = multiplication(ridge_inv, XTy)
 
         self.coefficients = beta.flatten()
         self.fitted = True
         return self
 
     def predict(self, X: np.ndarray) -> np.ndarray:
-        """Predict using the fitted model."""
+        """Predict using the Ridge model."""
         if not self.fitted:
             raise ValueError("Model is not fitted yet.")
         X = self._add_intercept(X)
@@ -49,10 +56,10 @@ class LinearRegression(BaseRegressor):
         return y_pred.flatten()
 
     def summary(self) -> str:
-        """Return a readable summary of the coefficients."""
+        """Readable summary of coefficients."""
         if not self.fitted:
             return "Model not yet fitted."
         coef_str = "\n".join(
             [f"β{i}: {coef:.4f}" for i, coef in enumerate(self.coefficients)]
         )
-        return f"Linear Regression Coefficients:\n{coef_str}"
+        return f"Ridge Regression Coefficients (λ={self.alpha}):\n{coef_str}"

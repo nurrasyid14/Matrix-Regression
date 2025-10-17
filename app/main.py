@@ -1,136 +1,159 @@
+# app/main.py
 import os
-import pandas as pd
 from flask import Flask, request, jsonify, render_template, session
-from flask_cors import CORS  # Impor CORS
+from flask_cors import CORS 
 from werkzeug.utils import secure_filename
 from sklearn.model_selection import train_test_split
+import pandas as pd
+import numpy as np
 
-# Impor dari modul Anda
+# Import your modules (assumes PYTHONPATH or working dir includes /app)
 from dataset_receiver.dataset_gate import DatasetGate
 from regressor.linear_regression import LinearRegression
 
-# --- Konfigurasi Aplikasi Flask ---
-# Membuat instance aplikasi.
-# Konfigurasi ini memberi tahu Flask di mana menemukan file HTML dan file statis (CSS/JS)
+# --- Flask app config ---
 app = Flask(__name__, template_folder='frontend/templates', static_folder='frontend/static')
-
-# PERBAIKAN: Mengaktifkan CORS untuk mengizinkan permintaan dari frontend
 CORS(app)
 
-# Konfigurasi dasar untuk upload dan session
 UPLOAD_FOLDER = "uploads_temp"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-app.config['SECRET_KEY'] = 'ini-adalah-kunci-rahasia-yang-sangat-aman' # Ganti ini nanti
+# Make sure to set a real secret key in production
+app.config['SECRET_KEY'] = os.environ.get('FLASK_SECRET', 'dev-secret-key-for-local')
 
-# --- Rute untuk Menampilkan Halaman Web ---
+# In-memory store for uploaded DataFrames keyed by filename (or session id)
+# NOTE: this is ephemeral (lost on restart); fine for dev.
+datasets = {}
 
+
+# --- Routes ---
 @app.route("/")
 def index():
-    """Menampilkan halaman utama (index.html)."""
     return render_template("index.html")
 
-# --- Rute API untuk Frontend ---
 
 @app.route("/api/upload", methods=["POST"])
 def upload_dataset():
     """
-    Menerima file yang diunggah dari frontend, memprosesnya,
-    dan menyimpan hasilnya di session pengguna.
+    Accept file upload (key: 'dataset'), use DatasetGate to load numeric-only DataFrame,
+    save the DataFrame in the server-side `datasets` dict, and store the filename in session.
+    Response: { "columns": [...column names...] }
     """
-    # PERBAIKAN: Kunci 'dataset' harus cocok dengan yang ada di api.js
     if "dataset" not in request.files:
-        return jsonify({"error": "Kunci 'dataset' tidak ditemukan dalam permintaan. Pastikan frontend mengirim file dengan benar."}), 400
+        return jsonify({"error": "No file part named 'dataset' in request."}), 400
 
     file = request.files["dataset"]
     if file.filename == "":
-        return jsonify({"error": "Nama file kosong."}), 400
+        return jsonify({"error": "No file selected."}), 400
 
     try:
-        # Simpan file sementara dengan aman
         filename = secure_filename(file.filename)
         filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         file.save(filepath)
 
-        # Gunakan DatasetGate Anda untuk memuat file
+        # Use DatasetGate to load and filter numeric columns
+        # We use quick_load convenience (returns DataFrame with numeric-only columns)
         df = DatasetGate.quick_load(filepath, numeric_only=True)
 
-        # Simpan DataFrame sebagai format JSON di dalam sesi
-        session['dataset_json'] = df.to_json(orient='split')
+        # store dataframe server-side (in-memory) and keep filename in session
+        datasets[filename] = df
+        session['uploaded_filename'] = filename
 
-        # Hapus file sementara setelah tidak diperlukan lagi
-        os.remove(filepath)
+        # remove temp file (we keep DataFrame in memory)
+        try:
+            os.remove(filepath)
+        except Exception:
+            pass
 
-        # Kirim kembali daftar kolom ke frontend agar bisa ditampilkan
         return jsonify({"columns": df.columns.tolist()})
 
     except Exception as e:
-        # Memberikan pesan error yang lebih informatif jika terjadi kesalahan
-        return jsonify({"error": f"Gagal memproses file di backend: {str(e)}"}), 500
+        # For debugging, include the error message in response
+        return jsonify({"error": f"Failed to process file on backend: {str(e)}"}), 500
 
 
 @app.route("/api/run-regression", methods=["POST"])
-def run_regression_analysis():
+def run_regression():
     """
-    Menjalankan analisis regresi berdasarkan data dari session
-    dan konfigurasi yang dikirim oleh frontend.
+    Run regression using the dataset uploaded earlier (filename in session).
+    Expect JSON payload: { "features": [...], "target": "y" }
+    Returns JSON with equation, coefficients for chart, and accuracy chart data.
     """
-    if 'dataset_json' not in session:
-        return jsonify({"error": "Dataset tidak ditemukan di session. Mohon unggah file terlebih dahulu."}), 400
+    filename = session.get('uploaded_filename')
+    if not filename:
+        return jsonify({"error": "No uploaded dataset found in session. Please upload a file first."}), 400
+
+    df = datasets.get(filename)
+    if df is None:
+        return jsonify({"error": "Uploaded dataset not found on server. Please re-upload."}), 400
+
+    payload = request.get_json() or {}
+    features = payload.get("features")
+    target = payload.get("target")
+
+    if not features or not target:
+        return jsonify({"error": "Missing 'features' or 'target' in request body."}), 400
+
+    # Validate columns exist
+    missing = [c for c in features + [target] if c not in df.columns]
+    if missing:
+        return jsonify({"error": f"Columns not found in dataset: {missing}"}), 400
 
     try:
-        # Muat kembali DataFrame dari data JSON yang tersimpan di session
-        df = pd.read_json(session['dataset_json'], orient='split')
+        # Prepare data (use numpy arrays for the matrix regressors)
+        X = df[features].to_numpy(dtype=float)
+        y = df[target].to_numpy(dtype=float)
 
-        # Ambil konfigurasi (fitur & target) dari frontend
-        config = request.json
-        features = config.get("features")
-        target = config.get("target")
-
-        if not features or not target:
-            return jsonify({"error": "Fitur atau target tidak disediakan dalam permintaan."}), 400
-
-        # Siapkan data untuk model
-        X = df[features]
-        y = df[target]
-
-        # Bagi data untuk pengujian akurasi model
+        # Split for a quick test set to visualize prediction performance
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-        # Latih model regresi linear Anda
-        model = LinearRegression(normalize=True)
+        # Instantiate your matrix-based LinearRegression (note: no normalize arg)
+        model = LinearRegression(fit_intercept=True)
         model.fit(X_train, y_train)
-        
-        # Buat prediksi pada data uji
-        predictions = model.predict(X_test)
 
-        # --- Siapkan Respons JSON yang Sesuai untuk Frontend ---
+        # Predictions
+        y_pred = model.predict(X_test)  # returns 1D array
 
-        # 1. Buat string persamaan model
-        coeffs = model.coefficients()
-        intercept = coeffs[0]
-        feature_coeffs = coeffs[1:]
-        equation = f"{target} = {intercept:.4f} + " + " + ".join([f"({coef:.4f} * {feat})" for feat, coef in zip(features, feature_coeffs)])
+        # Build equation string
+        # model.coefficients is expected to be 1D array: [intercept, coef1, coef2, ...]
+        coeffs = getattr(model, "coefficients", None)
+        if coeffs is None:
+            # fallback: try attribute name used in other versions
+            coeffs = getattr(model, "coef_", None)
 
-        # 2. Siapkan data untuk Bar Chart (Pengaruh Fitur)
+        if coeffs is None:
+            # If still None, return error
+            return jsonify({"error": "Model coefficients not available after fitting."}), 500
+
+        coeffs = np.asarray(coeffs).flatten()
+        intercept = float(coeffs[0])
+        feature_coeffs = coeffs[1:].tolist()
+
+        equation = f"{target} = {intercept:.4f}"
+        for feat, c in zip(features, feature_coeffs):
+            equation += f" + ({c:.4f} * {feat})"
+
+        # Prepare feature chart data (bar chart)
         feature_chart_data = {
-            'labels': features,
-            'datasets': [{
-                'label': 'Koefisien',
-                'data': feature_coeffs.tolist(),
-                'backgroundColor': 'rgba(153, 102, 255, 0.6)'
+            "labels": features,
+            "datasets": [{
+                "label": "Koefisien",
+                "data": feature_coeffs,
+                # keep color info simple; your UI may override
+                "backgroundColor": "rgba(153, 102, 255, 0.6)"
             }]
         }
 
-        # 3. Siapkan data untuk Scatter Plot (Akurasi Model)
-        y_test_list = y_test.tolist()
-        predictions_list = predictions.flatten().tolist()
+        # Prepare accuracy chart data (actual vs predicted scatter + identity line)
+        y_test_list = list(map(float, y_test.tolist()))
+        predictions_list = list(map(float, y_pred.tolist()))
+
         min_val = min(min(y_test_list), min(predictions_list))
         max_val = max(max(y_test_list), max(predictions_list))
-        
+
         accuracy_chart_data = {
-            'points': [{'x': actual, 'y': pred} for actual, pred in zip(y_test_list, predictions_list)],
-            'line': [{'x': min_val, 'y': min_val}, {'x': max_val, 'y': max_val}]
+            "points": [{"x": a, "y": p} for a, p in zip(y_test_list, predictions_list)],
+            "line": [{"x": min_val, "y": min_val}, {"x": max_val, "y": max_val}]
         }
 
         return jsonify({
@@ -140,10 +163,18 @@ def run_regression_analysis():
         })
 
     except Exception as e:
+        # Print stacktrace server-side to help debugging
         import traceback
-        traceback.print_exc() # Mencetak error detail di terminal untuk debugging
-        return jsonify({"error": f"Analisis gagal: {str(e)}"}), 500
+        traceback.print_exc()
+        return jsonify({"error": f"Analysis failed: {str(e)}"}), 500
+
+
+# simple health endpoint
+@app.route("/health", methods=["GET"])
+def health():
+    return "OK", 200
+
 
 if __name__ == "__main__":
-    # Jalankan aplikasi dalam mode debug untuk melihat error
+    # production should disable debug and use WSGI server
     app.run(host="0.0.0.0", port=5000, debug=True)
