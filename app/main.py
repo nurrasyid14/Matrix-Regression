@@ -1,180 +1,154 @@
-# app/main.py
 import os
+import pandas as pd
 from flask import Flask, request, jsonify, render_template, session
-from flask_cors import CORS 
+from flask_cors import CORS
 from werkzeug.utils import secure_filename
 from sklearn.model_selection import train_test_split
-import pandas as pd
-import numpy as np
 
-# Import your modules (assumes PYTHONPATH or working dir includes /app)
+# Import internal modules
 from dataset_receiver.dataset_gate import DatasetGate
 from regressor.linear_regression import LinearRegression
+from regressor.polynomial_regression import PolynomialRegression
+from regressor.ridge_regression import RidgeRegression
+from regressor.metrics import (
+    r2_score,
+    mean_squared_error,
+    root_mean_squared_error,
+    mean_absolute_error,
+    explained_variance_score
+)
 
-# --- Flask app config ---
+# --- Flask App Configuration ---
 app = Flask(__name__, template_folder='frontend/templates', static_folder='frontend/static')
 CORS(app)
 
 UPLOAD_FOLDER = "uploads_temp"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-# Make sure to set a real secret key in production
-app.config['SECRET_KEY'] = os.environ.get('FLASK_SECRET', 'dev-secret-key-for-local')
+app.config['SECRET_KEY'] = 'super-secret-key-change-this'  # Change later in production
 
-# In-memory store for uploaded DataFrames keyed by filename (or session id)
-# NOTE: this is ephemeral (lost on restart); fine for dev.
-datasets = {}
+# --- ROUTES ---
 
-
-# --- Routes ---
 @app.route("/")
 def index():
+    """Serve the main web page."""
     return render_template("index.html")
 
 
 @app.route("/api/upload", methods=["POST"])
 def upload_dataset():
-    """
-    Accept file upload (key: 'dataset'), use DatasetGate to load numeric-only DataFrame,
-    save the DataFrame in the server-side `datasets` dict, and store the filename in session.
-    Response: { "columns": [...column names...] }
-    """
+    """Handle dataset upload and store it temporarily in session."""
     if "dataset" not in request.files:
-        return jsonify({"error": "No file part named 'dataset' in request."}), 400
+        return jsonify({"error": "No file uploaded under key 'dataset'"}), 400
 
     file = request.files["dataset"]
     if file.filename == "":
-        return jsonify({"error": "No file selected."}), 400
+        return jsonify({"error": "Empty filename"}), 400
 
     try:
         filename = secure_filename(file.filename)
         filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         file.save(filepath)
 
-        # Use DatasetGate to load and filter numeric columns
-        # We use quick_load convenience (returns DataFrame with numeric-only columns)
         df = DatasetGate.quick_load(filepath, numeric_only=True)
-
-        # store dataframe server-side (in-memory) and keep filename in session
-        datasets[filename] = df
-        session['uploaded_filename'] = filename
-
-        # remove temp file (we keep DataFrame in memory)
-        try:
-            os.remove(filepath)
-        except Exception:
-            pass
+        session['dataset_json'] = df.to_json(orient='split')
+        os.remove(filepath)
 
         return jsonify({"columns": df.columns.tolist()})
-
     except Exception as e:
-        # For debugging, include the error message in response
-        return jsonify({"error": f"Failed to process file on backend: {str(e)}"}), 500
+        return jsonify({"error": f"Failed to process file: {str(e)}"}), 500
 
 
 @app.route("/api/run-regression", methods=["POST"])
-def run_regression():
-    """
-    Run regression using the dataset uploaded earlier (filename in session).
-    Expect JSON payload: { "features": [...], "target": "y" }
-    Returns JSON with equation, coefficients for chart, and accuracy chart data.
-    """
-    filename = session.get('uploaded_filename')
-    if not filename:
-        return jsonify({"error": "No uploaded dataset found in session. Please upload a file first."}), 400
-
-    df = datasets.get(filename)
-    if df is None:
-        return jsonify({"error": "Uploaded dataset not found on server. Please re-upload."}), 400
-
-    payload = request.get_json() or {}
-    features = payload.get("features")
-    target = payload.get("target")
-
-    if not features or not target:
-        return jsonify({"error": "Missing 'features' or 'target' in request body."}), 400
-
-    # Validate columns exist
-    missing = [c for c in features + [target] if c not in df.columns]
-    if missing:
-        return jsonify({"error": f"Columns not found in dataset: {missing}"}), 400
+def run_regression_analysis():
+    """Run selected regression model and return metrics + plots."""
+    if 'dataset_json' not in session:
+        return jsonify({"error": "No dataset found in session. Upload first."}), 400
 
     try:
-        # Prepare data (use numpy arrays for the matrix regressors)
-        X = df[features].to_numpy(dtype=float)
-        y = df[target].to_numpy(dtype=float)
+        df = pd.read_json(session['dataset_json'], orient='split')
+        config = request.json
 
-        # Split for a quick test set to visualize prediction performance
+        features = config.get("features")
+        target = config.get("target")
+        model_type = config.get("modelType", "linear")
+        degree = config.get("degree", 2)
+        alpha = config.get("alpha", 1.0)
+
+        if not features or not target:
+            return jsonify({"error": "Features or target missing in request"}), 400
+
+        X = df[features].values
+        y = df[target].values
+
+        # Split data
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-        # Instantiate your matrix-based LinearRegression (note: no normalize arg)
-        model = LinearRegression(fit_intercept=True)
+        # Select model
+        if model_type == "linear":
+            model = LinearRegression(fit_intercept=True)
+        elif model_type == "polynomial":
+            model = PolynomialRegression(degree=degree)
+        elif model_type == "ridge":
+            model = RidgeRegression(alpha=alpha)
+        else:
+            return jsonify({"error": f"Unknown model type: {model_type}"}), 400
+
+        # Train + Predict
         model.fit(X_train, y_train)
+        predictions = model.predict(X_test)
 
-        # Predictions
-        y_pred = model.predict(X_test)  # returns 1D array
-
-        # Build equation string
-        # model.coefficients is expected to be 1D array: [intercept, coef1, coef2, ...]
-        coeffs = getattr(model, "coefficients", None)
-        if coeffs is None:
-            # fallback: try attribute name used in other versions
-            coeffs = getattr(model, "coef_", None)
-
-        if coeffs is None:
-            # If still None, return error
-            return jsonify({"error": "Model coefficients not available after fitting."}), 500
-
-        coeffs = np.asarray(coeffs).flatten()
-        intercept = float(coeffs[0])
-        feature_coeffs = coeffs[1:].tolist()
-
-        equation = f"{target} = {intercept:.4f}"
-        for feat, c in zip(features, feature_coeffs):
-            equation += f" + ({c:.4f} * {feat})"
-
-        # Prepare feature chart data (bar chart)
-        feature_chart_data = {
-            "labels": features,
-            "datasets": [{
-                "label": "Koefisien",
-                "data": feature_coeffs,
-                # keep color info simple; your UI may override
-                "backgroundColor": "rgba(153, 102, 255, 0.6)"
-            }]
+        # Compute metrics
+        metrics = {
+            "R²": round(r2_score(y_test, predictions), 4),
+            "MSE": round(mean_squared_error(y_test, predictions), 4),
+            "RMSE": round(root_mean_squared_error(y_test, predictions), 4),
+            "MAE": round(mean_absolute_error(y_test, predictions), 4),
+            "Explained Variance": round(explained_variance_score(y_test, predictions), 4)
         }
 
-        # Prepare accuracy chart data (actual vs predicted scatter + identity line)
-        y_test_list = list(map(float, y_test.tolist()))
-        predictions_list = list(map(float, y_pred.tolist()))
+        # Equation / Coeff summary
+        coef_str = model.summary()
 
+        # Feature impact chart
+        if hasattr(model, "coefficients"):
+            coeffs = model.coefficients
+            feature_chart_data = {
+                'labels': features,
+                'datasets': [{
+                    'label': 'Coefficients',
+                    'data': coeffs[1:].tolist() if model.fit_intercept else coeffs.tolist(),
+                    'backgroundColor': 'rgba(153, 102, 255, 0.6)'
+                }]
+            }
+        else:
+            feature_chart_data = {}
+
+        # Accuracy chart (scatter)
+        y_test_list = y_test.tolist()
+        predictions_list = predictions.flatten().tolist()
         min_val = min(min(y_test_list), min(predictions_list))
         max_val = max(max(y_test_list), max(predictions_list))
-
         accuracy_chart_data = {
-            "points": [{"x": a, "y": p} for a, p in zip(y_test_list, predictions_list)],
-            "line": [{"x": min_val, "y": min_val}, {"x": max_val, "y": max_val}]
+            'points': [{'x': actual, 'y': pred} for actual, pred in zip(y_test_list, predictions_list)],
+            'line': [{'x': min_val, 'y': min_val}, {'x': max_val, 'y': max_val}]
         }
 
+        # Response
         return jsonify({
-            "equation": equation,
+            "modelType": model_type,
+            "summary": coef_str,
+            "metrics": metrics,
             "featureChartData": feature_chart_data,
             "accuracyChartData": accuracy_chart_data
         })
 
     except Exception as e:
-        # Print stacktrace server-side to help debugging
         import traceback
         traceback.print_exc()
-        return jsonify({"error": f"Analysis failed: {str(e)}"}), 500
+        return jsonify({"error": f"Regression failed: {str(e)}"}), 500
 
 
-# simple health endpoint
-@app.route("/health", methods=["GET"])
-def health():
-    return "OK", 200
-
-
+# --- Main Entry Point ---
 if __name__ == "__main__":
-    # production should disable debug and use WSGI server
     app.run(host="0.0.0.0", port=8000, debug=True)
