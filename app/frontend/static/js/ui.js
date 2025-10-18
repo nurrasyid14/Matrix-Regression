@@ -149,10 +149,6 @@ const UI = (function () {
       const vals = Object.values(resp.coefficients).slice(1);
       renderCoefficients(keys, vals);
     }
-
-    // accuracy
-    if (coefChart) { coefChart.destroy(); coefChart = null; }
-    if (accuracyChart) { accuracyChart.destroy(); accuracyChart = null; }
   }
 
   return {
