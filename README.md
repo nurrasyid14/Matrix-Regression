@@ -182,17 +182,17 @@ Matrix-Regression/
 
 ```bash
 # Clone and run
-git clone <repository-url>
+git clone https://github.com/nurrasyid14/Matrix-Regression
 cd Matrix-Regression
 
 # Build and start with Docker Compose
-docker-compose up -d
+docker compose up --d
 
 # View logs
 docker-compose logs -f
 
 # Stop the application
-docker-compose down
+docker compose down
 ```
 
 ### Manual Docker Build
@@ -202,7 +202,7 @@ docker-compose down
 docker build -t matrix-regression .
 
 # Run the container
-docker run -p 5000:5000 matrix-regression
+docker run -p 8000:8000 matrix-regression
 ```
 
 ---
