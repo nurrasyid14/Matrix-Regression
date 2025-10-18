@@ -1,68 +1,108 @@
-/**
- * API.js — Handles all communication between the frontend and Flask backend.
- * Now with session persistence via cookies (credentials: 'include')
- */
+// app/frontend/static/main.js
 
-const API = {
-    /**
-     * Upload dataset file to Flask backend.
-     * @param {File} file - The dataset file to upload.
-     * @returns {Promise<object>} - JSON response from backend.
-     */
-    async uploadFile(file) {
-        const formData = new FormData();
-        formData.append('dataset', file);
+import API from "./API.js";
 
-        try {
-            const response = await fetch('/api/upload', {
-                method: 'POST',
-                body: formData,
-                credentials: 'include', // ✅ allow Flask session cookies
-            });
+document.addEventListener("DOMContentLoaded", () => {
+  const fileInput = document.getElementById("file-upload");
+  const fileNameSpan = document.getElementById("file-name");
+  const btnRun = document.getElementById("btn-run");
+  const btnReset = document.getElementById("btn-reset");
+  const selectAllBtn = document.getElementById("select-all-features");
+  const deselectAllBtn = document.getElementById("deselect-all-features");
+  const regressionType = document.getElementById("regression-type");
+  const polyOptions = document.getElementById("polynomial-options");
+  const ridgeOptions = document.getElementById("ridge-options");
 
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || 'Gagal mengunggah file.');
-            }
+  // ---------------------------
+  // Show/hide options based on regression type
+  // ---------------------------
+  regressionType.addEventListener("change", () => {
+    const type = regressionType.value;
+    polyOptions.classList.toggle("hidden", type !== "polynomial");
+    ridgeOptions.classList.toggle("hidden", type !== "ridge");
+  });
 
-            return await response.json();
-        } catch (error) {
-            console.error('Error in uploadFile:', error);
-            throw error;
-        }
-    },
+  // ---------------------------
+  // File selection & upload
+  // ---------------------------
+  fileInput.addEventListener("change", async () => {
+    const file = fileInput.files[0];
+    if (!file) return;
 
-    /**
-     * Run regression analysis on uploaded dataset.
-     * @param {string[]} selectedFeatures - Array of feature names.
-     * @param {string} selectedTarget - Target variable name.
-     * @param {string} modelType - Type of regression ('linear', 'ridge', 'polynomial').
-     * @returns {Promise<object>} - JSON response containing regression results.
-     */
-    async runAnalysis(selectedFeatures, selectedTarget, modelType = 'linear') {
-        try {
-            const response = await fetch('/api/run-regression', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                credentials: 'include', // ✅ ensure session persistence
-                body: JSON.stringify({
-                    features: selectedFeatures,
-                    target: selectedTarget,
-                    modelType: modelType,
-                }),
-            });
+    fileNameSpan.textContent = file.name;
+    UI.showStatus("Uploading dataset...");
 
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || 'Gagal menjalankan analisis.');
-            }
+    try {
+      const result = await API.uploadFile(file);
+      UI.showStatus("Dataset uploaded successfully.");
+      UI.populateColumnSelectors(result.columns);
+      UI.showPreview(result.preview);
+    } catch (err) {
+      UI.showStatus(err.message, true);
+    }
+  });
 
-            return await response.json();
-        } catch (error) {
-            console.error('Error in runAnalysis:', error);
-            throw error;
-        }
-    },
-};
+  // ---------------------------
+  // Select / Deselect all features
+  // ---------------------------
+  selectAllBtn.addEventListener("click", () => {
+    document.querySelectorAll("#feature-selector input[type=checkbox]").forEach(cb => cb.checked = true);
+  });
+  deselectAllBtn.addEventListener("click", () => {
+    document.querySelectorAll("#feature-selector input[type=checkbox]").forEach(cb => cb.checked = false);
+  });
+
+  // ---------------------------
+  // Reset everything
+  // ---------------------------
+  btnReset.addEventListener("click", () => {
+    UI.resetDashboard();
+    UI.clearSelectors();
+    fileInput.value = "";
+    fileNameSpan.textContent = "No file chosen";
+    UI.showStatus("Reset complete.");
+  });
+
+  // ---------------------------
+  // Run regression analysis
+  // ---------------------------
+  btnRun.addEventListener("click", async () => {
+    const selectedFeatures = Array.from(
+      document.querySelectorAll("#feature-selector input[type=checkbox]:checked")
+    ).map(cb => cb.value);
+
+    const selectedTarget = document.querySelector("#target-selector input[type=radio]:checked")?.value;
+
+    if (!selectedFeatures.length) {
+      UI.showStatus("Select at least one feature.", true);
+      return;
+    }
+    if (!selectedTarget) {
+      UI.showStatus("Select a target variable.", true);
+      return;
+    }
+
+    // Prepare payload for API
+    const payload = {
+      features: selectedFeatures,
+      target: selectedTarget,
+      modelType: regressionType.value
+    };
+
+    if (regressionType.value === "polynomial") {
+      payload.degree = parseInt(document.getElementById("poly-degree").value || "2", 10);
+    } else if (regressionType.value === "ridge") {
+      payload.alpha = parseFloat(document.getElementById("ridge-alpha").value || "1.0");
+    }
+
+    UI.showStatus("Running regression analysis...");
+
+    try {
+      const result = await API.runAnalysis(payload);
+      UI.showStatus("Analysis complete.");
+      UI.displayResults(result);
+    } catch (err) {
+      UI.showStatus(err.message, true);
+    }
+  });
+});

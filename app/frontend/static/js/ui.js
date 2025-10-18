@@ -2,6 +2,9 @@ const UI = (function () {
   let coefChart = null;
   let accuracyChart = null;
 
+  // -------------------------
+  // Helper Functions
+  // -------------------------
   function clearSelectors() {
     document.getElementById("feature-selector").innerHTML = "";
     document.getElementById("target-selector").innerHTML = "";
@@ -14,7 +17,7 @@ const UI = (function () {
     const targetContainer = document.getElementById("target-selector");
 
     columns.forEach(col => {
-      // feature checkbox
+      // Feature checkbox
       const wrapper = document.createElement("div");
       wrapper.className = "flex items-center gap-2 mb-1";
       const cb = document.createElement("input");
@@ -29,7 +32,7 @@ const UI = (function () {
       wrapper.appendChild(lbl);
       featureContainer.appendChild(wrapper);
 
-      // target radio
+      // Target radio
       const rwrap = document.createElement("div");
       rwrap.className = "flex items-center gap-2 mb-1";
       const radio = document.createElement("input");
@@ -47,7 +50,6 @@ const UI = (function () {
   }
 
   function showPreview(dfRowsHtml) {
-    // A simple HTML-based preview (server can return small HTML if desired)
     const preview = document.getElementById("preview");
     preview.innerHTML = dfRowsHtml || "<div class='text-xs text-gray-500'>No preview available</div>";
   }
@@ -65,10 +67,14 @@ const UI = (function () {
     document.getElementById("metric-rmse").textContent = "—";
     document.getElementById("metric-mae").textContent = "—";
     document.getElementById("metric-ev").textContent = "—";
+
     if (coefChart) { coefChart.destroy(); coefChart = null; }
     if (accuracyChart) { accuracyChart.destroy(); accuracyChart = null; }
   }
 
+  // -------------------------
+  // Chart Rendering
+  // -------------------------
   function renderCoefficients(labels, data) {
     const ctx = document.getElementById("coef-chart").getContext("2d");
     if (coefChart) coefChart.destroy();
@@ -105,7 +111,6 @@ const UI = (function () {
           borderColor: "rgba(79,70,229,0.8)",
           borderWidth: 1,
           fill: false,
-          showLine: true,
           pointRadius: 0
         }
       ]
@@ -124,30 +129,34 @@ const UI = (function () {
     });
   }
 
+  // -------------------------
+  // Display Results
+  // -------------------------
   function displayResults(resp) {
-    // summary
-    document.getElementById("equation").textContent = resp.equation || resp.summary || "—";
+    // Equation
+    document.getElementById("equation").textContent = resp.equation || "—";
 
-    // metrics (if available)
-    if (Array.isArray(resp.metrics)) {
-        const metricsMap = Object.fromEntries(
-            resp.metrics.map(m => [m.name.toLowerCase(), m.value])
-        );
-        document.getElementById("metric-r2").textContent = metricsMap["r² score"] ?? "—";
-        document.getElementById("metric-mse").textContent = metricsMap["mean squared error"] ?? "—";
-        document.getElementById("metric-rmse").textContent = metricsMap["root mean squared error"] ?? "—";
-        document.getElementById("metric-mae").textContent = metricsMap["mean absolute error"] ?? "—";
-        document.getElementById("metric-ev").textContent = metricsMap["explained variance"] ?? "—";
-        }
+    // Metrics
+    if (resp.metrics) {
+      document.getElementById("metric-r2").textContent = resp.metrics["R²"] ?? "—";
+      document.getElementById("metric-mse").textContent = resp.metrics["MSE"] ?? "—";
+      document.getElementById("metric-rmse").textContent = resp.metrics["RMSE"] ?? "—";
+      document.getElementById("metric-mae").textContent = resp.metrics["MAE"] ?? "—";
+      document.getElementById("metric-ev").textContent = resp.metrics["Samples Used"] ?? "—";
+    }
 
-
-    // coefficients (object or chart data)
+    // Coefficients chart
     if (resp.featureChartData) {
       renderCoefficients(resp.featureChartData.labels, resp.featureChartData.datasets[0].data);
     } else if (resp.coefficients) {
-      const keys = Object.keys(resp.coefficients).slice(1); // skip intercept
+      const keys = Object.keys(resp.coefficients).slice(1);
       const vals = Object.values(resp.coefficients).slice(1);
       renderCoefficients(keys, vals);
+    }
+
+    // Accuracy chart
+    if (resp.accuracyChartData) {
+      renderAccuracy(resp.accuracyChartData.points, resp.accuracyChartData.line);
     }
   }
 
