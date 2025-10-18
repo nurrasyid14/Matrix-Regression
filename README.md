@@ -116,8 +116,6 @@ Matrix-Regression/
 │   │   │   ├── multiplication.py
 │   │   │   └── subtraction.py
 │   │   ├── [linalg]
-│   │   │   ├── [__pycache__]
-│   │   │   │   └── (EMPTY DIRECTORY)
 │   │   │   ├── __init__.py
 │   │   │   ├── determinant.py
 │   │   │   ├── inverse.py
@@ -133,8 +131,6 @@ Matrix-Regression/
 │   │   ├── outlier_handler.py
 │   │   └── scaler.py
 │   ├── [regressor]
-│   │   ├── [__pycache__]
-│   │   │   └── (EMPTY DIRECTORY)
 │   │   ├── __init__.py
 │   │   ├── linear_regression.py
 │   │   ├── metrics.py
