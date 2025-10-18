@@ -1,157 +1,136 @@
-# Matrix-Regression App
+Matrix-Regression App
 
 A comprehensive web application for matrix operations and regression analysis built with Python and Flask, containerized with Docker.
 
-## 🚀 Features
+🚀 Features
+1. Dataset Receiver
 
-### 1. Dataset Receiver
-- Load datasets from CSV/JSON files
-- Generate random datasets for testing
-- Dataset statistics and visualization
-- Data preprocessing capabilities
+Load datasets from CSV, XLSX, or JSON files.
 
-### 2. Basic Operations
-- Matrix addition, subtraction, multiplication, division
-- Element-wise operations
-- Real-time computation
-- Result validation
+Generate random datasets for testing.
 
-### 3. Linear Algebra Operations
-- Matrix transpose, inverse, determinant
-- Identity matrix generation
-- Matrix multiplication
-- Advanced linear algebra functions
+Dataset statistics and preview visualization.
 
-### 4. Regression Machine
-- Linear Regression
-- Polynomial Regression  
-- Ridge Regression
-- Model evaluation metrics (R², MSE, RMSE)
-- Prediction capabilities
+Automatic preprocessing: numeric column selection.
 
-### 5. Web Interface
-- Flask-based frontend
-- Interactive Plotly visualizations
-- Real-time results display
-- RESTful API endpoints
+2. Basic Matrix Operations
 
-## 📁 Project Structure
+Matrix addition, subtraction, multiplication, division.
 
-```
+Element-wise operations.
+
+Real-time computation and validation.
+
+3. Linear Algebra Operations
+
+Transpose, inverse, determinant of matrices.
+
+Identity matrix generation.
+
+Advanced matrix operations.
+
+4. Regression Machine
+
+Linear Regression.
+
+Polynomial Regression.
+
+Ridge Regression (L2 regularization).
+
+Model evaluation metrics: R², MSE, RMSE, MAE, Explained Variance.
+
+Prediction capabilities.
+
+5. Web Interface
+
+Interactive, Flask-based frontend.
+
+Dataset preview and feature/target selection.
+
+Dynamic charts for coefficients and prediction accuracy.
+
+Real-time status messages and analysis feedback.
+
+6. Frontend Usage & Interaction
+Upload Dataset
+
+Click “Choose file” to select a CSV, XLSX, or JSON file.
+
+Only numeric columns are used.
+
+First 5 rows are displayed as a preview table.
+
+Select Features & Target
+
+Features (X): Check one or more columns as input variables.
+
+Target (Y): Select one column as output variable.
+
+Quick selection via “Select All” or “Deselect All”.
+
+Choose Regression Type
+
+Linear Regression – standard linear model.
+
+Ridge Regression – L2-regularized linear regression; configure α.
+
+Polynomial Regression – expands features to polynomial degree.
+
+Run Analysis
+
+Click “Run Analysis”.
+
+Status messages show progress.
+
+Results displayed:
+
+Equation: Fitted regression formula.
+
+Metrics: R², MSE, RMSE, MAE, Explained Variance.
+
+Feature Coefficients: Bar chart for feature influence.
+
+Actual vs Predicted: Scatter plot with 45° reference line.
+
+Reset
+
+Click “Reset” to clear selections, charts, and metrics.
+
+Charts
+
+Feature Coefficients: Bar chart visualizing feature weights.
+
+Accuracy Chart: Scatter plot comparing actual vs predicted values.
+
+Interactive and responsive.
+
+💡 Tip: For best performance, keep datasets under 50,000 rows × 200 features.
+
+📁 Project Structure
 Matrix-Regression/
 ├── README.md
 ├── app
-│   ├── __init__.py
-│   ├── data_profiler
-│   │   ├── __init__.py
-│   │   ├── correlation_overview.py
-│   │   ├── missing_values.py
-│   │   ├── profiler.py
-│   │   ├── summary_stats.py
-│   │   └── type_overview.py
-│   ├── dataset_receiver
-│   │   ├── __init__.py
-│   │   ├── __pycache__
-│   │   │   ├── __init__.cpython-311.pyc
-│   │   │   ├── base_loader.cpython-311.pyc
-│   │   │   ├── csv_loader.cpython-311.pyc
-│   │   │   ├── dataset_gate.cpython-311.pyc
-│   │   │   ├── excel_loader.cpython-311.pyc
-│   │   │   ├── json_loader.cpython-311.pyc
-│   │   │   ├── utils.cpython-311.pyc
-│   │   │   └── validator.cpython-311.pyc
-│   │   ├── base_loader.py
-│   │   ├── csv_loader.py
-│   │   ├── dataset_gate.py
-│   │   ├── excel_loader.py
-│   │   ├── json_loader.py
-│   │   ├── utils.py
-│   │   └── validator.py
-│   ├── frontend
-│   │   ├── static
-│   │   │   ├── assets
-│   │   │   │   └── loading.txt
-│   │   │   ├── css
-│   │   │   │   └── style.css
-│   │   │   └── js
-│   │   │       ├── api.js
-│   │   │       ├── main.js
-│   │   │       └── ui.js
-│   │   └── templates
-│   │       └── index.html
-│   ├── main.py
-│   ├── matrice_ops
-│   │   ├── __init__.py
-│   │   ├── arithmatics
-│   │   │   ├── __init__.py
-│   │   │   ├── addition.py
-│   │   │   ├── exponential.py
-│   │   │   ├── fraction.py
-│   │   │   ├── multiplication.py
-│   │   │   └── subtraction.py
-│   │   └── linalg
-│   │       ├── __init__.py
-│   │       ├── determinant.py
-│   │       ├── inverse.py
-│   │       ├── rank.py
-│   │       └── transpose.py
-│   ├── preprocessor
-│   │   ├── __init__.py
-│   │   ├── base_cleaner.py
-│   │   ├── cleaner.py
-│   │   ├── encoder.py
-│   │   ├── imputer.py
-│   │   ├── outlier_handler.py
-│   │   └── scaler.py
-│   ├── regressor
-│   │   ├── __init__.py
-│   │   ├── __pycache__
-│   │   │   ├── __init__.cpython-311.pyc
-│   │   │   ├── linear_regression.cpython-311.pyc
-│   │   │   ├── metrics.cpython-311.pyc
-│   │   │   ├── model_base.cpython-311.pyc
-│   │   │   └── preprocessing.cpython-311.pyc
-│   │   ├── linear_regression.py
-│   │   ├── metrics.py
-│   │   ├── model_base.py
-│   │   └── preprocessing.py
-│   └── visualizations
-│       ├── __init__.py
-│       ├── __pycache__
-│       │   ├── __init__.cpython-311.pyc
-│       │   ├── base_plotter.cpython-311.pyc
-│       │   ├── box_plot.cpython-311.pyc
-│       │   ├── correlation_heatmap.cpython-311.pyc
-│       │   ├── histogram.cpython-311.pyc
-│       │   ├── pair_plot.cpython-311.pyc
-│       │   ├── scatter_plot.cpython-311.pyc
-│       │   └── utils.cpython-311.pyc
-│       ├── base_plotter.py
-│       ├── box_plot.py
-│       ├── correlation_heatmap.py
-│       ├── histogram.py
-│       ├── pair_plot.py
-│       ├── scatter_plot.py
-│       └── utils.py
-└── docker
-    ├── docker-compose.yml
-    ├── dockerfile
-    ├── entrypoint.sh
-    ├── nginx.conf
-    └── requirements.txt
+│   ├── data_profiler/       # Dataset statistics and profiling
+│   ├── dataset_receiver/    # Dataset loading & preprocessing
+│   ├── frontend/
+│   │   ├── static/js/       # main.js, ui.js, api.js
+│   │   ├── static/css/      # Styling
+│   │   └── templates/       # index.html
+│   ├── matrice_ops/         # Matrix arithmetic & linear algebra
+│   ├── preprocessor/        # Cleaning, encoding, scaling
+│   ├── regressor/           # Linear, Ridge, Polynomial regression
+│   ├── visualizations/      # Plotting utilities
+│   └── main.py              # Flask app
+└── docker/                  # Docker configuration & compose files
 
-20 directories, 81 files
-```
+🐳 Docker Setup
+Prerequisites
 
-## 🐳 Docker Setup
+Docker
 
-### Prerequisites
-- Docker
-- Docker Compose
+Docker Compose
 
-### Quick Start
-
-```bash
+Quick Start
 # Clone and run
 git clone <repository-url>
 cd Matrix-Regression
@@ -164,79 +143,53 @@ docker-compose logs -f
 
 # Stop the application
 docker-compose down
-```
 
-### Manual Docker Build
-
-```bash
+Manual Docker Build
 # Build the image
 docker build -t matrix-regression .
 
 # Run the container
 docker run -p 5000:5000 matrix-regression
-```
 
-## 🛠️ Development with Docker
+🧮 Algorithm Complexity Analysis
+Matrix Operations
+Operation	Time Complexity	Space Complexity	Method
+Addition/Subtraction	O(m×n)	O(m×n)	Element-wise
+Element-wise Multiply	O(m×n)	O(m×n)	Hadamard product
+Matrix Multiplication	O(m×n×p)	O(m×p)	Naive algorithm
+Transpose	O(m×n)	O(m×n)	Element swapping
+Determinant	O(n³)	O(n²)	LU decomposition
+Inverse	O(n³)	O(n²)	Gaussian elimination
+Identity Matrix	O(n²)	O(n²)	Diagonal initialization
+Regression Algorithms
+Algorithm	Training Time	Prediction Time	Method
+Linear Regression	O(n²×p + p³)	O(p)	Normal equation
+Polynomial Regression	O((n×d)²×p + (p×d)³)	O(p×d)	Feature expansion
+Ridge Regression	O(n²×p + p³)	O(p)	Regularized normal equation
 
-```bash
-# Development mode with hot reload
-docker-compose -f docker-compose.dev.yml up
+Notation:
 
-# Run tests in container
-docker-compose exec app pytest tests/
+n = number of samples
 
-# Access container shell
-docker-compose exec app bash
+p = number of features
 
-# View application logs
-docker-compose logs app
-```
+d = polynomial degree
 
-## 📦 Docker Configuration Files
+m×n = matrix dimensions
 
-### docker-compose.yml
+📊 Performance Specifications
 
-### docker/Dockerfile
+Max Dataset Size: 50,000 rows × 200 features
 
+Matrix Operations: Optimized with NumPy BLAS
 
-## 🧮 Algorithm Complexity Analysis
+Memory Usage: Efficient up to 2GB datasets
 
-### Matrix Operations
-| Operation | Time Complexity | Space Complexity | Method |
-|-----------|----------------|------------------|--------|
-| Addition/Subtraction | O(m×n) | O(m×n) | Element-wise |
-| Element-wise Multiply | O(m×n) | O(m×n) | Hadamard product |
-| Matrix Multiplication | O(m×n×p) | O(m×p) | Naive algorithm |
-| Transpose | O(m×n) | O(m×n) | Element swapping |
-| Determinant | O(n³) | O(n²) | LU decomposition |
-| Inverse | O(n³) | O(n²) | Gaussian elimination |
-| Identity Matrix | O(n²) | O(n²) | Diagonal initialization |
+Response Time: < 5 seconds for standard operations
 
-### Regression Algorithms
-| Algorithm | Training Time | Prediction Time | Method |
-|-----------|---------------|-----------------|--------|
-| Linear Regression | O(n²×p + p³) | O(p) | Normal equation |
-| Polynomial Regression | O((n×d)²×p + (p×d)³) | O(p×d) | Feature expansion |
-| Ridge Regression | O(n²×p + p³) | O(p) | Regularized normal equation |
+Container Resources: 2GB RAM, 2+ CPU cores recommended
 
-**Notation:**
-- **n** = number of samples
-- **p** = number of features  
-- **d** = polynomial degree
-- **m×n** = matrix dimensions
-
-## 📊 Performance Specifications
-
-- **Maximum Dataset Size**: 50,000 samples × 200 features
-- **Matrix Operations**: Optimized using NumPy BLAS
-- **Memory Usage**: Efficient handling up to 2GB datasets
-- **Response Time**: < 5 seconds for standard operations
-- **Container Memory**: 2GB recommended
-- **Container CPU**: 2+ cores recommended
-
-## 🔧 Development
-
-```bash
+🔧 Development
 # Development with Docker
 docker-compose -f docker-compose.yml up --build
 
@@ -246,11 +199,8 @@ docker-compose exec app pytest
 # Code quality
 docker-compose exec app black app/
 docker-compose exec app flake8 app/
-```
 
-## 🚀 Production Deployment
-
-```bash
+🚀 Production Deployment
 # Production deployment
 docker-compose -f docker-compose.prod.yml up -d
 
@@ -260,46 +210,35 @@ docker-compose up -d --scale app=3
 # Monitor containers
 docker-compose ps
 docker-compose logs -f
-```
 
-## 🔒 Environment Variables
-
-```bash
-# Application settings
+🔒 Environment Variables
 FLASK_ENV=production
 FLASK_DEBUG=0
 DATABASE_URL=sqlite:///data/app.db
 UPLOAD_FOLDER=/app/data/uploads
 MAX_CONTENT_LENGTH=16777216  # 16MB
-```
 
-## 📈 Monitoring & Logs
-
-```bash
-# View real-time logs
+📈 Monitoring & Logs
+# View logs
 docker-compose logs -f app
 
-# Check container resource usage
+# Check container usage
 docker stats
 
-# Access application metrics
+# Health check
 curl http://localhost:5000/health
-```
 
-## 🗂️ Data Persistence
+🗂️ Data Persistence
 
-- Data is persisted in `./data` volume
-- Uploads stored in `./data/uploads`
-- Database in `./data/app.db`
+Data persisted in ./data volume
 
-## 🐛 Troubleshooting
+Uploads stored in ./data/uploads
 
-```bash
+Database in ./data/app.db
+
+🐛 Troubleshooting
 # Check container status
 docker-compose ps
-
-# View detailed logs
-docker-compose logs app
 
 # Restart services
 docker-compose restart
@@ -307,18 +246,7 @@ docker-compose restart
 # Rebuild from scratch
 docker-compose down -v
 docker-compose up --build
-```
 
-## 📄 License
+📄 License
 
 MIT License - see LICENSE file for details.
-
----
-
-**Docker Benefits:**
-- Consistent development and production environments
-- Easy deployment and scaling
-- Isolated dependencies
-- Simplified CI/CD pipeline
-
-Visit `http://localhost:5000` to access the application after starting with Docker Compose.
