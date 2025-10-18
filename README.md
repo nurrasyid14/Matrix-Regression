@@ -1,112 +1,91 @@
-Matrix-Regression App
+# Matrix-Regression App
 
 A comprehensive web application for matrix operations and regression analysis built with Python and Flask, containerized with Docker.
 
-🚀 Features
-1. Dataset Receiver
+## 🚀 Features
 
-Load datasets from CSV, XLSX, or JSON files.
+### 1. Dataset Receiver
 
-Generate random datasets for testing.
+* Load datasets from CSV, XLSX, or JSON files.
+* Generate random datasets for testing.
+* Dataset statistics and preview visualization.
+* Automatic preprocessing: numeric column selection.
 
-Dataset statistics and preview visualization.
+### 2. Basic Matrix Operations
 
-Automatic preprocessing: numeric column selection.
+* Matrix addition, subtraction, multiplication, division.
+* Element-wise operations.
+* Real-time computation and validation.
 
-2. Basic Matrix Operations
+### 3. Linear Algebra Operations
 
-Matrix addition, subtraction, multiplication, division.
+* Transpose, inverse, determinant of matrices.
+* Identity matrix generation.
+* Advanced matrix operations.
 
-Element-wise operations.
+### 4. Regression Machine
 
-Real-time computation and validation.
+* Linear Regression.
+* Polynomial Regression.
+* Ridge Regression (L2 regularization).
+* Model evaluation metrics: R², MSE, RMSE, MAE, Explained Variance.
+* Prediction capabilities.
 
-3. Linear Algebra Operations
+### 5. Web Interface
 
-Transpose, inverse, determinant of matrices.
+* Interactive, Flask-based frontend.
+* Dataset preview and feature/target selection.
+* Dynamic charts for coefficients and prediction accuracy.
+* Real-time status messages and analysis feedback.
 
-Identity matrix generation.
+### 6. Frontend Usage & Interaction
 
-Advanced matrix operations.
+#### Upload Dataset
 
-4. Regression Machine
+* Click **“Choose file”** to select a CSV, XLSX, or JSON file.
+* Only numeric columns are used.
+* First 5 rows are displayed as a **preview table**.
 
-Linear Regression.
+#### Select Features & Target
 
-Polynomial Regression.
+* **Features (X):** Check one or more columns as input variables.
+* **Target (Y):** Select one column as output variable.
+* Quick selection via **“Select All”** or **“Deselect All”**.
 
-Ridge Regression (L2 regularization).
+#### Choose Regression Type
 
-Model evaluation metrics: R², MSE, RMSE, MAE, Explained Variance.
+* **Linear Regression** – standard linear model.
+* **Ridge Regression** – L2-regularized linear regression; configure α.
+* **Polynomial Regression** – expands features to polynomial degree.
 
-Prediction capabilities.
+#### Run Analysis
 
-5. Web Interface
+* Click **“Run Analysis”**.
+* Status messages show progress.
+* Results displayed:
 
-Interactive, Flask-based frontend.
+  * **Equation:** Fitted regression formula.
+  * **Metrics:** R², MSE, RMSE, MAE, Explained Variance.
+  * **Feature Coefficients:** Bar chart for feature influence.
+  * **Actual vs Predicted:** Scatter plot with 45° reference line.
 
-Dataset preview and feature/target selection.
+#### Reset
 
-Dynamic charts for coefficients and prediction accuracy.
+* Click **“Reset”** to clear selections, charts, and metrics.
 
-Real-time status messages and analysis feedback.
+#### Charts
 
-6. Frontend Usage & Interaction
-Upload Dataset
+* **Feature Coefficients:** Bar chart visualizing feature weights.
+* **Accuracy Chart:** Scatter plot comparing actual vs predicted values.
+* Interactive and responsive.
 
-Click “Choose file” to select a CSV, XLSX, or JSON file.
+💡 **Tip:** For best performance, keep datasets under 50,000 rows × 200 features.
 
-Only numeric columns are used.
+---
 
-First 5 rows are displayed as a preview table.
+## 📁 Project Structure
 
-Select Features & Target
-
-Features (X): Check one or more columns as input variables.
-
-Target (Y): Select one column as output variable.
-
-Quick selection via “Select All” or “Deselect All”.
-
-Choose Regression Type
-
-Linear Regression – standard linear model.
-
-Ridge Regression – L2-regularized linear regression; configure α.
-
-Polynomial Regression – expands features to polynomial degree.
-
-Run Analysis
-
-Click “Run Analysis”.
-
-Status messages show progress.
-
-Results displayed:
-
-Equation: Fitted regression formula.
-
-Metrics: R², MSE, RMSE, MAE, Explained Variance.
-
-Feature Coefficients: Bar chart for feature influence.
-
-Actual vs Predicted: Scatter plot with 45° reference line.
-
-Reset
-
-Click “Reset” to clear selections, charts, and metrics.
-
-Charts
-
-Feature Coefficients: Bar chart visualizing feature weights.
-
-Accuracy Chart: Scatter plot comparing actual vs predicted values.
-
-Interactive and responsive.
-
-💡 Tip: For best performance, keep datasets under 50,000 rows × 200 features.
-
-📁 Project Structure
+```
 Matrix-Regression/
 ├── README.md
 ├── app
@@ -122,15 +101,20 @@ Matrix-Regression/
 │   ├── visualizations/      # Plotting utilities
 │   └── main.py              # Flask app
 └── docker/                  # Docker configuration & compose files
+```
 
-🐳 Docker Setup
-Prerequisites
+---
 
-Docker
+## 🐳 Docker Setup
 
-Docker Compose
+### Prerequisites
 
-Quick Start
+* Docker
+* Docker Compose
+
+### Quick Start
+
+```bash
 # Clone and run
 git clone <repository-url>
 cd Matrix-Regression
@@ -143,53 +127,64 @@ docker-compose logs -f
 
 # Stop the application
 docker-compose down
+```
 
-Manual Docker Build
+### Manual Docker Build
+
+```bash
 # Build the image
 docker build -t matrix-regression .
 
 # Run the container
 docker run -p 5000:5000 matrix-regression
+```
 
-🧮 Algorithm Complexity Analysis
-Matrix Operations
-Operation	Time Complexity	Space Complexity	Method
-Addition/Subtraction	O(m×n)	O(m×n)	Element-wise
-Element-wise Multiply	O(m×n)	O(m×n)	Hadamard product
-Matrix Multiplication	O(m×n×p)	O(m×p)	Naive algorithm
-Transpose	O(m×n)	O(m×n)	Element swapping
-Determinant	O(n³)	O(n²)	LU decomposition
-Inverse	O(n³)	O(n²)	Gaussian elimination
-Identity Matrix	O(n²)	O(n²)	Diagonal initialization
-Regression Algorithms
-Algorithm	Training Time	Prediction Time	Method
-Linear Regression	O(n²×p + p³)	O(p)	Normal equation
-Polynomial Regression	O((n×d)²×p + (p×d)³)	O(p×d)	Feature expansion
-Ridge Regression	O(n²×p + p³)	O(p)	Regularized normal equation
+---
 
-Notation:
+## 🧮 Algorithm Complexity Analysis
 
-n = number of samples
+### Matrix Operations
 
-p = number of features
+| Operation             | Time Complexity | Space Complexity | Method                  |
+| --------------------- | --------------- | ---------------- | ----------------------- |
+| Addition/Subtraction  | O(m×n)          | O(m×n)           | Element-wise            |
+| Element-wise Multiply | O(m×n)          | O(m×n)           | Hadamard product        |
+| Matrix Multiplication | O(m×n×p)        | O(m×p)           | Naive algorithm         |
+| Transpose             | O(m×n)          | O(m×n)           | Element swapping        |
+| Determinant           | O(n³)           | O(n²)            | LU decomposition        |
+| Inverse               | O(n³)           | O(n²)            | Gaussian elimination    |
+| Identity Matrix       | O(n²)           | O(n²)            | Diagonal initialization |
 
-d = polynomial degree
+### Regression Algorithms
 
-m×n = matrix dimensions
+| Algorithm             | Training Time        | Prediction Time | Method                      |
+| --------------------- | -------------------- | --------------- | --------------------------- |
+| Linear Regression     | O(n²×p + p³)         | O(p)            | Normal equation             |
+| Polynomial Regression | O((n×d)²×p + (p×d)³) | O(p×d)          | Feature expansion           |
+| Ridge Regression      | O(n²×p + p³)         | O(p)            | Regularized normal equation |
 
-📊 Performance Specifications
+**Notation:**
 
-Max Dataset Size: 50,000 rows × 200 features
+* **n** = number of samples
+* **p** = number of features
+* **d** = polynomial degree
+* **m×n** = matrix dimensions
 
-Matrix Operations: Optimized with NumPy BLAS
+---
 
-Memory Usage: Efficient up to 2GB datasets
+## 📊 Performance Specifications
 
-Response Time: < 5 seconds for standard operations
+* **Max Dataset Size:** 50,000 rows × 200 features
+* **Matrix Operations:** Optimized with NumPy BLAS
+* **Memory Usage:** Efficient up to 2GB datasets
+* **Response Time:** < 5 seconds for standard operations
+* **Container Resources:** 2GB RAM, 2+ CPU cores recommended
 
-Container Resources: 2GB RAM, 2+ CPU cores recommended
+---
 
-🔧 Development
+## 🔧 Development
+
+```bash
 # Development with Docker
 docker-compose -f docker-compose.yml up --build
 
@@ -199,8 +194,13 @@ docker-compose exec app pytest
 # Code quality
 docker-compose exec app black app/
 docker-compose exec app flake8 app/
+```
 
-🚀 Production Deployment
+---
+
+## 🚀 Production Deployment
+
+```bash
 # Production deployment
 docker-compose -f docker-compose.prod.yml up -d
 
@@ -210,15 +210,25 @@ docker-compose up -d --scale app=3
 # Monitor containers
 docker-compose ps
 docker-compose logs -f
+```
 
-🔒 Environment Variables
+---
+
+## 🔒 Environment Variables
+
+```bash
 FLASK_ENV=production
 FLASK_DEBUG=0
 DATABASE_URL=sqlite:///data/app.db
 UPLOAD_FOLDER=/app/data/uploads
 MAX_CONTENT_LENGTH=16777216  # 16MB
+```
 
-📈 Monitoring & Logs
+---
+
+## 📈 Monitoring & Logs
+
+```bash
 # View logs
 docker-compose logs -f app
 
@@ -227,16 +237,21 @@ docker stats
 
 # Health check
 curl http://localhost:5000/health
+```
 
-🗂️ Data Persistence
+---
 
-Data persisted in ./data volume
+## 🗂️ Data Persistence
 
-Uploads stored in ./data/uploads
+* Data persisted in `./data` volume
+* Uploads stored in `./data/uploads`
+* Database in `./data/app.db`
 
-Database in ./data/app.db
+---
 
-🐛 Troubleshooting
+## 🐛 Troubleshooting
+
+```bash
 # Check container status
 docker-compose ps
 
@@ -246,7 +261,10 @@ docker-compose restart
 # Rebuild from scratch
 docker-compose down -v
 docker-compose up --build
+```
 
-📄 License
+---
+
+## 📄 License
 
 MIT License - see LICENSE file for details.
