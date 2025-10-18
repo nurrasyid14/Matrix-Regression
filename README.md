@@ -88,20 +88,90 @@ A comprehensive web application for matrix operations and regression analysis bu
 ```
 Matrix-Regression/
 ├── README.md
-├── app
-│   ├── data_profiler/       # Dataset statistics and profiling
-│   ├── dataset_receiver/    # Dataset loading & preprocessing
-│   ├── frontend/
-│   │   ├── static/js/       # main.js, ui.js, api.js
-│   │   ├── static/css/      # Styling
-│   │   └── templates/       # index.html
-│   ├── matrice_ops/         # Matrix arithmetic & linear algebra
-│   ├── preprocessor/        # Cleaning, encoding, scaling
-│   ├── regressor/           # Linear, Ridge, Polynomial regression
-│   ├── visualizations/      # Plotting utilities
-│   └── main.py              # Flask app
-└── docker/                  # Docker configuration & compose files
-```
+├── [app]
+│   ├── [data_profiler]
+│   │   ├── __init__.py
+│   │   ├── correlation_overview.py
+│   │   ├── missing_values.py
+│   │   ├── profiler.py
+│   │   ├── summary_stats.py
+│   │   └── type_overview.py
+│   ├── [dataset_receiver]
+│   │   ├── [uploads]
+│   │   │   └── (EMPTY DIRECTORY)
+│   │   ├── __init__.py
+│   │   ├── base_loader.py
+│   │   ├── csv_loader.py
+│   │   ├── dataset_gate.py
+│   │   ├── excel_loader.py
+│   │   ├── json_loader.py
+│   │   ├── utils.py
+│   │   └── validator.py
+│   ├── [matrice_ops]
+│   │   ├── [arithmatics]
+│   │   │   ├── __init__.py
+│   │   │   ├── addition.py
+│   │   │   ├── exponential.py
+│   │   │   ├── fraction.py
+│   │   │   ├── multiplication.py
+│   │   │   └── subtraction.py
+│   │   ├── [linalg]
+│   │   │   ├── [__pycache__]
+│   │   │   │   └── (EMPTY DIRECTORY)
+│   │   │   ├── __init__.py
+│   │   │   ├── determinant.py
+│   │   │   ├── inverse.py
+│   │   │   ├── rank.py
+│   │   │   └── transpose.py
+│   │   └── __init__.py
+│   ├── [preprocessor]
+│   │   ├── __init__.py
+│   │   ├── base_cleaner.py
+│   │   ├── cleaner.py
+│   │   ├── encoder.py
+│   │   ├── imputer.py
+│   │   ├── outlier_handler.py
+│   │   └── scaler.py
+│   ├── [regressor]
+│   │   ├── [__pycache__]
+│   │   │   └── (EMPTY DIRECTORY)
+│   │   ├── __init__.py
+│   │   ├── linear_regression.py
+│   │   ├── metrics.py
+│   │   ├── model_base.py
+│   │   ├── polynomial_regression.py
+│   │   ├── preprocessing.py
+│   │   └── ridge_regression.py
+│   ├── [visualizations]
+│   │   ├── __init__.py
+│   │   ├── base_plotter.py
+│   │   ├── box_plot.py
+│   │   ├── correlation_heatmap.py
+│   │   ├── histogram.py
+│   │   ├── pair_plot.py
+│   │   ├── scatter_plot.py
+│   │   └── utils.py
+│   ├── [frontend]
+│   │   ├── [static]
+│   │   │   ├── [assets]
+│   │   │   │   └── loading.txt
+│   │   │   ├── [css]
+│   │   │   │   └── style.css
+│   │   │   └── [js]
+│   │   │       ├── api.js
+│   │   │       ├── main.js
+│   │   │       └── ui.js
+│   │   └── [templates]
+│   │       └── index.html
+│   ├── __init__.py
+│   └── main.py
+└──[docker]
+    ├── .dockerignore
+    ├── docker-compose.yml
+    ├── dockerfile
+    ├── entrypoint.sh
+    ├── nginx.conf
+    └── requirements.txt
 
 ---
 
