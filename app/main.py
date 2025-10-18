@@ -112,8 +112,8 @@ def run_regression_api():
         if not features or not target:
             return jsonify({"error": "Missing features or target."}), 400
 
-        X = df[features]
-        y = df[target]
+        X = df[features].to_numpy()
+        y = df[target].to_numpy()
 
         # Train/test split
         X_train, X_test, y_train, y_test = train_test_split(
@@ -129,8 +129,8 @@ def run_regression_api():
             model = LinearRegression()
 
         # Fit model and predict
-        model.fit(X_train.to_numpy(), y_train.to_numpy())
-        predictions = model.predict(X_test.to_numpy())
+        model.fit(X_train, y_train)
+        predictions = model.predict(X_test).ravel()  # ensure 1D
 
         # Compute metrics
         r2 = r2_score(y_test, predictions)
@@ -144,15 +144,13 @@ def run_regression_api():
             "Samples Used": int(len(X)),
         }
 
-        # Prepare coefficients & equation
+        # Prepare coefficients
         coeffs = getattr(model, "coefficients", getattr(model, "coef_", []))
-        intercept = 0.0
-        feature_coeffs = []
+        coeffs = coeffs.ravel().tolist() if hasattr(coeffs, "ravel") else list(coeffs)
+        intercept = coeffs[0] if len(coeffs) > 0 else 0.0
+        feature_coeffs = coeffs[1:] if len(coeffs) > 1 else []
 
-        if len(coeffs) > 0:
-            intercept = coeffs[0]
-            feature_coeffs = coeffs[1:] if len(coeffs) > 1 else []
-
+        # Prepare regression equation
         equation = (
             f"{target} = {intercept:.4f} + "
             + " + ".join([f"({coef:.4f} * {feat})" for coef, feat in zip(feature_coeffs, features)])
@@ -164,16 +162,14 @@ def run_regression_api():
             "labels": features,
             "datasets": [{
                 "label": "Feature Influence",
-                "data": [float(c) for c in feature_coeffs],
+                "data": feature_coeffs,
                 "backgroundColor": "rgba(54, 162, 235, 0.6)"
             }]
         }
 
         # Actual vs Predicted scatter chart
         scatter_chart = {
-            "points": [
-                {"x": float(a), "y": float(p)} for a, p in zip(y_test.tolist(), predictions.flatten().tolist())
-            ],
+            "points": [{"x": float(a), "y": float(p)} for a, p in zip(y_test.tolist(), predictions.tolist())],
             "line": [
                 {"x": float(min(y_test)), "y": float(min(y_test))},
                 {"x": float(max(y_test)), "y": float(max(y_test))}
@@ -192,6 +188,7 @@ def run_regression_api():
         import traceback
         traceback.print_exc()
         return jsonify({"error": f"Analysis failed: {str(e)}"}), 500
+
 
 
 # -------------------------------------
