@@ -10,7 +10,7 @@ from sklearn.model_selection import train_test_split
 
 # Custom imports (pastikan module ini ada di app/)
 from dataset_receiver.dataset_gate import DatasetGate
-from app.regressor import (
+from regressor import (
     LinearRegression,
     RidgeRegression,
     PolynomialRegression,
