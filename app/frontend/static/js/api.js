@@ -1,108 +1,79 @@
-// app/frontend/static/main.js
+// app/frontend/static/API.js
 
-import API from "./API.js";
+/**
+ * Objek API berisi fungsi untuk berkomunikasi dengan backend Flask.
+ * Tidak memakai export agar bisa dipakai langsung di browser tanpa error "API is not defined".
+ */
+const API = {
+  // Ganti baseURL ini sesuai alamat backend Flask kamu
+  baseURL: "http://127.0.0.1:5000/api",
 
-document.addEventListener("DOMContentLoaded", () => {
-  const fileInput = document.getElementById("file-upload");
-  const fileNameSpan = document.getElementById("file-name");
-  const btnRun = document.getElementById("btn-run");
-  const btnReset = document.getElementById("btn-reset");
-  const selectAllBtn = document.getElementById("select-all-features");
-  const deselectAllBtn = document.getElementById("deselect-all-features");
-  const regressionType = document.getElementById("regression-type");
-  const polyOptions = document.getElementById("polynomial-options");
-  const ridgeOptions = document.getElementById("ridge-options");
-
-  // ---------------------------
-  // Show/hide options based on regression type
-  // ---------------------------
-  regressionType.addEventListener("change", () => {
-    const type = regressionType.value;
-    polyOptions.classList.toggle("hidden", type !== "polynomial");
-    ridgeOptions.classList.toggle("hidden", type !== "ridge");
-  });
-
-  // ---------------------------
-  // File selection & upload
-  // ---------------------------
-  fileInput.addEventListener("change", async () => {
-    const file = fileInput.files[0];
-    if (!file) return;
-
-    fileNameSpan.textContent = file.name;
-    UI.showStatus("Uploading dataset...");
+  /**
+   * Upload file dataset (CSV/XLSX/JSON) ke backend Flask.
+   * Endpoint: POST /api/upload
+   */
+  async uploadFile(file) {
+    const formData = new FormData();
+    formData.append("file", file);
 
     try {
-      const result = await API.uploadFile(file);
-      UI.showStatus("Dataset uploaded successfully.");
-      UI.populateColumnSelectors(result.columns);
-      UI.showPreview(result.preview);
-    } catch (err) {
-      UI.showStatus(err.message, true);
+      const response = await fetch(`${this.baseURL}/upload`, {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errText = await response.text();
+        throw new Error(`Upload failed: ${errText}`);
+      }
+
+      // Hasil JSON dari backend (kolom, preview, dsb)
+      return await response.json();
+    } catch (error) {
+      console.error("❌ Upload error:", error);
+      throw new Error("Failed to upload dataset. Please try again.");
     }
-  });
+  },
 
-  // ---------------------------
-  // Select / Deselect all features
-  // ---------------------------
-  selectAllBtn.addEventListener("click", () => {
-    document.querySelectorAll("#feature-selector input[type=checkbox]").forEach(cb => cb.checked = true);
-  });
-  deselectAllBtn.addEventListener("click", () => {
-    document.querySelectorAll("#feature-selector input[type=checkbox]").forEach(cb => cb.checked = false);
-  });
-
-  // ---------------------------
-  // Reset everything
-  // ---------------------------
-  btnReset.addEventListener("click", () => {
-    UI.resetDashboard();
-    UI.clearSelectors();
-    fileInput.value = "";
-    fileNameSpan.textContent = "No file chosen";
-    UI.showStatus("Reset complete.");
-  });
-
-  // ---------------------------
-  // Run regression analysis
-  // ---------------------------
-  btnRun.addEventListener("click", async () => {
-    const selectedFeatures = Array.from(
-      document.querySelectorAll("#feature-selector input[type=checkbox]:checked")
-    ).map(cb => cb.value);
-
-    const selectedTarget = document.querySelector("#target-selector input[type=radio]:checked")?.value;
-
-    if (!selectedFeatures.length) {
-      UI.showStatus("Select at least one feature.", true);
-      return;
-    }
-    if (!selectedTarget) {
-      UI.showStatus("Select a target variable.", true);
-      return;
-    }
-
-    // Prepare payload for API
-    const payload = {
-      features: selectedFeatures,
-      target: selectedTarget,
-      modelType: regressionType.value
-    };
-
-    if (regressionType.value === "polynomial") {
-      payload.degree = parseInt(document.getElementById("poly-degree").value || "2", 10);
-    } else if (regressionType.value === "ridge") {
-      payload.alpha = parseFloat(document.getElementById("ridge-alpha").value || "1.0");
-    }
-
-    UI.showStatus("Running regression analysis...");
-
+  /**
+   * Jalankan analisis regresi berdasarkan input user.
+   * Endpoint: POST /api/analyze
+   */
+  async runAnalysis(payload) {
     try {
-      const result = await API.runAnalysis(payload);
-      UI.showStatus("Analysis complete.");
-      UI.displayResults(result);
-    } catch (err) {
-      UI.showStatus(err.message, true);
+      const response = await fetch(`${this.baseURL}/analyze`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const errText = await response.text();
+        throw new Error(`Analysis failed: ${errText}`);
+      }
+
+      // Hasil analisis regresi (koefisien, metrik, dll)
+      return await response.json();
+    } catch (error) {
+      console.error("❌ Analysis error:", error);
+      throw new Error("Regression analysis failed. Please check your input.");
     }
-  });
-});
+  },
+
+  /**
+   * (Opsional) Ambil daftar model regresi dari backend.
+   * Endpoint: GET /api/models
+   */
+  async getModels() {
+    try {
+      const response = await fetch(`${this.baseURL}/models`);
+      if (!response.ok) throw new Error(await response.text());
+      return await response.json();
+    } catch (error) {
+      console.error("❌ Failed to load models:", error);
+      throw new Error("Cannot load available regression models.");
+    }
+  },
+};
+
+// 🟢 Tidak ada 'export' agar variabel API bisa diakses global di main.js

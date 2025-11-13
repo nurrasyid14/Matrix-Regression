@@ -1,6 +1,8 @@
 import os
 import pandas as pd
 from datetime import datetime
+
+# Import loader & utility modules (pastikan ada di folder yang sama)
 from .csv_loader import CSVLoader
 from .excel_loader import ExcelLoader
 from .json_loader import JSONLoader
@@ -10,14 +12,11 @@ from .validator import validate_dataframe
 
 class DatasetGate:
     """
-    Smart dataset receiver that automatically detects file type
-    (CSV, Excel, JSON) and loads it into a pandas DataFrame.
-
-    Features:
-      - Auto file-type detection
-      - Auto conversion of numeric-like strings
-      - Numeric-only filtering
-      - Logging of discarded columns
+    Smart dataset receiver:
+      - Auto detect file type (CSV, Excel, JSON)
+      - Auto convert numeric-like strings
+      - Keep numeric columns only (optional)
+      - Log discarded columns
     """
 
     SUPPORTED_EXTENSIONS = {
@@ -45,7 +44,7 @@ class DatasetGate:
         return self.SUPPORTED_EXTENSIONS[ext]
 
     def _auto_convert_numeric(self, df: pd.DataFrame) -> pd.DataFrame:
-        """Attempt to convert numeric-looking string columns to numeric dtype."""
+        """Convert numeric-like strings to numeric dtype if possible."""
         for col in df.columns:
             if df[col].dtype == "object":
                 converted = pd.to_numeric(df[col], errors="ignore")
@@ -54,7 +53,7 @@ class DatasetGate:
         return df
 
     def _filter_numeric(self, df: pd.DataFrame) -> pd.DataFrame:
-        """Filter to numeric columns only and log discarded ones."""
+        """Keep numeric columns only and log discarded ones."""
         all_columns = set(df.columns)
         numeric_df = df.select_dtypes(include=["number"])
         numeric_columns = set(numeric_df.columns)
@@ -71,20 +70,20 @@ class DatasetGate:
         return numeric_df
 
     def _log_discarded(self, discarded_cols):
-        """Log discarded columns to a file."""
+        """Log discarded columns to a file with timestamp."""
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         with open(self.log_path, "a", encoding="utf-8") as f:
             f.write(f"[{timestamp}] Discarded non-numeric columns: {', '.join(discarded_cols)}\n")
 
     def receive(self) -> pd.DataFrame:
         """
-        Main entry point:
+        Load dataset using proper loader:
           1. Check file existence
           2. Detect loader
           3. Load dataset
           4. Validate DataFrame
           5. Auto-convert numeric strings
-          6. Filter numeric columns (optional)
+          6. Filter numeric columns (if numeric_only=True)
         """
         check_file_exists(self.path)
         loader_class = self._detect_loader()
@@ -103,7 +102,7 @@ class DatasetGate:
         return self.data
 
     def preview(self, n: int = 5) -> pd.DataFrame:
-        """Preview first n rows of the loaded dataset."""
+        """Return first n rows of loaded dataset."""
         if self.data is None:
             raise ValueError("No dataset loaded yet. Call `.receive()` first.")
         return self.data.head(n)
@@ -111,7 +110,8 @@ class DatasetGate:
     @staticmethod
     def quick_load(file_path: str, numeric_only: bool = True) -> pd.DataFrame:
         """
-        Convenience method to load dataset without explicitly creating a DatasetGate instance.
+        Convenience method to load dataset in one line:
+          DatasetGate.quick_load("data.csv")
         """
         gate = DatasetGate(file_path, numeric_only=numeric_only)
         return gate.receive()

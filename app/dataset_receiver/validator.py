@@ -1,15 +1,10 @@
-#validator.py
-
 import pandas as pd
 
 def validate_dataframe(df: pd.DataFrame):
     """
-    Perform basic validation checks on a DataFrame.
+    Ensure DataFrame is not empty and has valid structure.
     """
-    if not isinstance(df, pd.DataFrame):
-        raise TypeError("Loaded object is not a pandas DataFrame.")
-    if df.empty:
+    if df is None or df.empty:
         raise ValueError("Loaded dataset is empty.")
-    if df.isnull().all().all():
-        raise ValueError("Dataset contains only NaN values.")
-    return True
+    if not isinstance(df, pd.DataFrame):
+        raise TypeError("Loaded data must be a pandas DataFrame.")

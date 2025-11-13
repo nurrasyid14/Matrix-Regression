@@ -1,5 +1,3 @@
-#__init__.py 
-
 # --- Dataset Receiver ---
 from app.dataset_receiver import (
     dataset_gate,
@@ -90,5 +88,16 @@ __all__ = [
     "viz_utils",
 ]
 
-# Optional: version tracking for releases
 __version__ = "0.1.0"
+
+from flask import Flask
+
+def create_app():
+    app = Flask(__name__)
+
+    # Import routes setelah app dibuat
+    from app.routes import main
+    app.register_blueprint(main)
+
+    return app
+

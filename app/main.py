@@ -8,9 +8,9 @@ from flask_session import Session
 from werkzeug.utils import secure_filename
 from sklearn.model_selection import train_test_split
 
-# Custom imports
-from dataset_receiver.dataset_gate import DatasetGate
-from regressor import (
+# Custom imports (pastikan module ini ada di app/)
+from app.dataset_receiver.dataset_gate import DatasetGate
+from app.regressor import (
     LinearRegression,
     RidgeRegression,
     PolynomialRegression,
@@ -57,10 +57,10 @@ def index():
 @app.route("/api/upload", methods=["POST"])
 def upload_dataset():
     """Upload and cache dataset to user session"""
-    if "dataset" not in request.files:
-        return jsonify({"error": "No file key named 'dataset' found."}), 400
+    if "file" not in request.files:
+        return jsonify({"error": "No file key named 'file' found."}), 400
 
-    file = request.files["dataset"]
+    file = request.files["file"]
     if file.filename == "":
         return jsonify({"error": "Empty filename provided."}), 400
 
@@ -69,15 +69,15 @@ def upload_dataset():
         filepath = os.path.join(app.config["UPLOAD_FOLDER"], filename)
         file.save(filepath)
 
-        # Load dataset
+        # Load dataset, hanya numeric columns
         df = DatasetGate.quick_load(filepath, numeric_only=True)
         os.remove(filepath)
 
-        # Save to session
+        # Simpan dataset di session
         session["dataset_json"] = df.to_json(orient="split")
         session.modified = True
 
-        # Include preview for frontend
+        # Preview untuk frontend
         preview_html = df.head(5).to_html(classes="table table-sm", index=False)
 
         return jsonify({
@@ -87,13 +87,15 @@ def upload_dataset():
         })
 
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         return jsonify({"error": f"Upload failed: {str(e)}"}), 500
 
 
 # -------------------------------------
 # Run Regression Analysis
 # -------------------------------------
-@app.route("/api/run-regression", methods=["POST"], endpoint="run_regression_api")
+@app.route("/api/analyze", methods=["POST"])
 def run_regression_api():
     """Execute regression and return metrics, coefficients, and charts"""
     if "dataset_json" not in session:
@@ -120,7 +122,7 @@ def run_regression_api():
             X, y, test_size=0.2, random_state=42
         )
 
-        # Select model
+        # Pilih model
         if model_type == "ridge":
             model = RidgeRegression(alpha=alpha)
         elif model_type == "polynomial":
@@ -128,11 +130,11 @@ def run_regression_api():
         else:
             model = LinearRegression()
 
-        # Fit model and predict
+        # Fit model dan prediksi
         model.fit(X_train, y_train)
-        predictions = model.predict(X_test).ravel()  # ensure 1D
+        predictions = model.predict(X_test).ravel()
 
-        # Compute metrics
+        # Hitung metrics
         r2 = r2_score(y_test, predictions)
         mse = mean_squared_error(y_test, predictions)
         rmse = mse ** 0.5
@@ -144,20 +146,20 @@ def run_regression_api():
             "Samples Used": int(len(X)),
         }
 
-        # Prepare coefficients
+        # Koefisien
         coeffs = getattr(model, "coefficients", getattr(model, "coef_", []))
         coeffs = coeffs.ravel().tolist() if hasattr(coeffs, "ravel") else list(coeffs)
         intercept = coeffs[0] if len(coeffs) > 0 else 0.0
         feature_coeffs = coeffs[1:] if len(coeffs) > 1 else []
 
-        # Prepare regression equation
+        # Persamaan regresi
         equation = (
             f"{target} = {intercept:.4f} + "
             + " + ".join([f"({coef:.4f} * {feat})" for coef, feat in zip(feature_coeffs, features)])
             if feature_coeffs else f"{target} = {intercept:.4f}"
         )
 
-        # Feature influence chart
+        # Chart koefisien
         feature_chart = {
             "labels": features,
             "datasets": [{
@@ -167,7 +169,7 @@ def run_regression_api():
             }]
         }
 
-        # Actual vs Predicted scatter chart
+        # Chart Actual vs Predicted
         scatter_chart = {
             "points": [{"x": float(a), "y": float(p)} for a, p in zip(y_test.tolist(), predictions.tolist())],
             "line": [
@@ -188,7 +190,6 @@ def run_regression_api():
         import traceback
         traceback.print_exc()
         return jsonify({"error": f"Analysis failed: {str(e)}"}), 500
-
 
 
 # -------------------------------------

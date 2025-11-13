@@ -1,5 +1,3 @@
-#csv_loader.py
-
 import pandas as pd
 from .base_loader import BaseLoader
 from .validator import validate_dataframe
