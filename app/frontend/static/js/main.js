@@ -1,6 +1,6 @@
 // app/frontend/static/main.js
 
-import API from "./api.js";
+// import API from "./api.js";
 
 document.addEventListener("DOMContentLoaded", () => {
   const fileInput = document.getElementById("file-upload");

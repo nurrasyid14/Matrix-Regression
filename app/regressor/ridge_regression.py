@@ -1,6 +1,6 @@
 import numpy as np
-from app.matrice_ops.linalg import inverse, transpose
-from app.matrice_ops import multiplication
+from matrice_ops.linalg import inverse, transpose
+from matrice_ops import multiplication
 from .model_base import BaseRegressor
 
 
