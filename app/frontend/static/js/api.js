@@ -6,7 +6,7 @@
  */
 const API = {
   // Ganti baseURL ini sesuai alamat backend Flask kamu
-  baseURL: "http://127.0.0.1:5000/api",
+  baseURL: "http://127.0.0.1:8000/api",
 
   /**
    * Upload file dataset (CSV/XLSX/JSON) ke backend Flask.

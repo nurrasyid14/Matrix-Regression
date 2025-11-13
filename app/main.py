@@ -9,7 +9,7 @@ from werkzeug.utils import secure_filename
 from sklearn.model_selection import train_test_split
 
 # Custom imports (pastikan module ini ada di app/)
-from app.dataset_receiver.dataset_gate import DatasetGate
+from dataset_receiver.dataset_gate import DatasetGate
 from app.regressor import (
     LinearRegression,
     RidgeRegression,
